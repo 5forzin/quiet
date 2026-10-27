@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="440" viewBox="0 0 1120 440" role="img" aria-labelledby="title description">
+  <title id="title">Quiet session and control flow</title>
+  <desc id="description">The user authorizes selected domains in Edge. A paired local bridge imports cookies into the agent's Edge on a separate Win32 desktop. An MCP client controls owned tabs. The local viewer receives frames without switching the user's input desktop.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#667369"/></marker>
+  </defs>
+  <rect width="1120" height="440" rx="16" fill="#f5f5f0"/>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <text x="40" y="42" fill="#6c756e" font-size="12" letter-spacing="1.4">SESSION TRANSFER</text>
+    <g fill="#ffffff" stroke="#d9ded6">
+      <rect x="40" y="70" width="280" height="130" rx="12"/>
+      <rect x="420" y="70" width="280" height="130" rx="12"/>
+      <rect x="800" y="70" width="280" height="130" rx="12"/>
+    </g>
+    <g fill="#263b2e" font-size="20" font-weight="600">
+      <text x="64" y="108">Your Edge</text><text x="444" y="108">Local bridge</text><text x="824" y="108">Agent Edge</text>
+    </g>
+    <g fill="#677269" font-size="14">
+      <text x="64" y="139">Review domains in the extension.</text><text x="64" y="163">Authorize the selected sessions.</text>
+      <text x="444" y="139">Paired on this computer.</text><text x="444" y="163">Imports only approved cookies.</text>
+      <text x="824" y="139">Own persistent browser profile.</text><text x="824" y="163">Separate Win32 desktop.</text>
+    </g>
+    <g fill="none" stroke="#667369" stroke-width="1.5" marker-end="url(#arrow)">
+      <path d="M320 135H406"/><path d="M700 135H786"/>
+      <path d="M320 330H406"/><path d="M700 330H786"/>
+      <path d="M940 200V266"/>
+    </g>
+    <g fill="#677269" font-size="11" text-anchor="middle">
+      <text x="370" y="119">Consent</text><text x="750" y="119">Import</text><text x="980" y="238">Frames</text>
+      <text x="370" y="314">Tools</text><text x="750" y="314">View</text>
+    </g>
+    <text x="40" y="247" fill="#6c756e" font-size="12" letter-spacing="1.4">CONTROL &amp; OBSERVATION</text>
+    <g fill="#e9eee7" stroke="#d2dbce">
+      <rect x="40" y="280" width="280" height="104" rx="12"/>
+      <rect x="420" y="280" width="280" height="104" rx="12"/>
+      <rect x="800" y="280" width="280" height="104" rx="12"/>
+    </g>
+    <g fill="#263b2e" font-size="18" font-weight="600">
+      <text x="64" y="318">Your agent / MCP client</text><text x="444" y="318">Owned browser tabs</text><text x="824" y="318">Live viewer</text>
+    </g>
+    <g fill="#677269" font-size="14">
+      <text x="64" y="346">Read, act, then verify.</text><text x="444" y="346">DOM actions or visible pointer.</text><text x="824" y="346">Watch from your desktop.</text>
+    </g>
+    <text x="40" y="416" fill="#677269" font-size="12">Local session transfer and preview · One agent desktop · No Windows input-desktop switch</text>
+  </g>
+</svg>
