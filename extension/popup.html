@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiet Desktop</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <main>
+    <header><span class="mark" aria-hidden="true">Q</span><strong>Quiet Desktop</strong><span id="connection">Offline</span></header>
+    <h1>Sessions for your agent</h1>
+    <p class="intro">Authorize selected cookies for the agent's browser on a separate Windows desktop.</p>
+    <div class="selection"><label><input id="all" type="checkbox" checked> Select all</label><span id="count">Loading…</span></div>
+    <label class="search"><span class="sr-only">Search sites</span><input id="search" type="search" placeholder="Search sites" autocomplete="off"></label>
+    <div id="sites" aria-label="Sites with stored cookies"></div>
+    <p id="unsupported" class="detail" hidden></p>
+    <p class="privacy">Selected cookies stay on this computer. Existing Edge sessions stay open. Some sites may ask you to sign in again.</p>
+    <button id="share" type="button" disabled>Authorize sessions</button>
+    <button id="connect" type="button" class="secondary">Reconnect</button>
+    <p id="status" role="status">Connecting…</p>
+  </main>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
