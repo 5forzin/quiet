@@ -1,0 +1,12 @@
+node_modules/
+.runtime/
+bin/
+extension/connection.local.js
+extension/manifest.json
+mcp-config.local.json
+design-qa.md
+test-results/
+.env
+.env.*
+!.env.example
+*.log
