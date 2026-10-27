@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Quiet Desktop</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/command.svg" />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div class="app layers-hidden inspector-hidden" id="app">
+      <aside class="layers-panel" aria-label="Agent workspace">
+        <header class="workspace-header">
+          <strong>Agent tabs</strong
+          ><button
+            class="icon-button"
+            id="layers-close"
+            aria-label="Hide tabs"
+            title="Hide tabs"
+          >
+            <img class="icon" src="/icons/sidebar-simple.svg" alt="" /></button
+          ><span>Microsoft Edge</span>
+        </header>
+        <section class="layers-section">
+          <button class="workspace-row selected" id="agent-workspace">
+            <img class="icon" src="/icons/desktop.svg" alt="" /><span
+              >Local agent</span
+            >
+          </button>
+        </section>
+        <section class="layers-section tabs-section">
+          <h2>Agent tabs <span id="tab-count">0</span></h2>
+          <div id="tab-list" class="tab-list">
+            <p class="panel-empty">No tabs open</p>
+          </div>
+        </section>
+        <footer class="workspace-footer">
+          <div>
+            <span id="bridge-dot" class="dot"></span
+            ><span id="bridge-state">Connecting</span>
+          </div>
+          <span id="session-state">No sessions imported</span>
+        </footer>
+        <div
+          id="layers-resize"
+          class="panel-resize"
+          role="separator"
+          aria-label="Resize tabs panel"
+          aria-orientation="vertical"
+          tabindex="0"
+        ></div>
+      </aside>
+      <main class="canvas-area">
+        <section
+          id="desktop-view"
+          class="desktop-view"
+          aria-label="Agent desktop preview"
+        >
+          <div id="stage" class="stage">
+            <div id="frame-group" class="frame-group" hidden>
+              <canvas
+                id="desktop-frame"
+                role="img"
+                aria-label="Live view of the agent's separate Windows desktop"
+              ></canvas>
+            </div>
+            <div id="empty" class="empty">
+              <img class="icon" src="/icons/desktop.svg" alt="" />
+              <h1 id="empty-title">Connecting to your desktop</h1>
+              <p id="empty-detail">The agent desktop will appear here.</p>
+            </div>
+            <div id="stream-overlay" class="stream-overlay" hidden>
+              Preview paused
+            </div>
+          </div>
+          <div
+            class="canvas-toolbar"
+            role="toolbar"
+            aria-label="Preview controls"
+          >
+            <button
+              id="stream-toggle"
+              class="toolbar-button"
+              aria-label="Pause preview"
+              title="Pause preview"
+              disabled
+            >
+              <img class="icon" src="/icons/pause.svg" alt="" /></button
+            ><span class="toolbar-divider"></span>
+            <div class="stream-label">
+              <span id="stream-dot" class="dot"></span
+              ><span id="stream-state">Connecting</span
+              ><span id="frame-metrics"></span>
+            </div>
+            <span class="toolbar-divider"></span>
+            <button
+              id="fit"
+              class="toolbar-button fit-button"
+              aria-pressed="true"
+              title="Toggle fit and actual size"
+            >
+              Fit</button
+            ><button
+              id="fullscreen"
+              class="toolbar-button"
+              aria-label="Full screen"
+              title="Full screen"
+            >
+              <img class="icon" src="/icons/corners-out.svg" alt="" />
+            </button>
+            <span class="toolbar-divider"></span>
+            <button
+              id="options-toggle"
+              class="toolbar-button"
+              aria-label="Options"
+              aria-expanded="false"
+              aria-controls="options-menu"
+              title="Options"
+            >
+              <img class="icon" src="/icons/dots-three.svg" alt="" />
+            </button>
+            <div id="options-menu" class="options-menu" hidden>
+              <button id="layers-toggle" aria-expanded="false">
+                <img class="icon" src="/icons/browser.svg" alt="" />Agent tabs
+              </button>
+              <button id="inspector-toggle" aria-expanded="false">
+                <img class="icon" src="/icons/desktop.svg" alt="" />Preview
+                settings
+              </button>
+              <button data-view="activity">
+                <img
+                  class="icon"
+                  src="/icons/list-bullets.svg"
+                  alt=""
+                />Activity
+              </button>
+              <button id="show-session">
+                <img class="icon" src="/icons/key.svg" alt="" />Session
+              </button>
+              <button id="open-mini">
+                <img class="icon" src="/icons/command.svg" alt="" />Mini control
+              </button>
+            </div>
+          </div>
+        </section>
+        <section
+          id="activity-view"
+          class="activity-view"
+          aria-label="Agent activity"
+          hidden
+        >
+          <header>
+            <h1>Activity</h1>
+            <button class="text-button" data-view="desktop">
+              Back to desktop
+            </button>
+            <span>Local agent</span>
+          </header>
+          <div id="activity-list"></div>
+        </section>
+        <div id="notice" class="notice" role="status" hidden></div>
+      </main>
+      <aside class="inspector-panel" aria-label="Inspector">
+        <div
+          id="inspector-resize"
+          class="panel-resize"
+          role="separator"
+          aria-label="Resize settings panel"
+          aria-orientation="vertical"
+          tabindex="0"
+        ></div>
+        <header class="inspector-header">
+          <span id="agent-dot" class="dot"></span
+          ><span id="agent-state">Connecting</span
+          ><button
+            id="pin"
+            class="icon-button"
+            title="Keep on top"
+            aria-label="Keep on top"
+            aria-pressed="false"
+            disabled
+          >
+            <img class="icon" src="/icons/push-pin.svg" alt="" /></button
+          ><button id="agent-toggle" class="primary-button" disabled>
+            <img class="icon" src="/icons/pause.svg" alt="" /><span
+              >Pause agent</span
+            >
+          </button>
+        </header>
+        <button
+          id="inspector-close"
+          class="close-panel"
+          aria-label="Hide settings"
+        >
+          Close settings
+        </button>
+        <div class="inspector-tabs" role="tablist" aria-label="Inspector">
+          <button
+            role="tab"
+            id="preview-tab"
+            aria-selected="true"
+            aria-controls="preview-properties"
+            data-inspector="preview"
+          >
+            Preview</button
+          ><button
+            role="tab"
+            id="session-tab"
+            aria-selected="false"
+            aria-controls="session-properties"
+            data-inspector="session"
+          >
+            Session
+          </button>
+        </div>
+        <section
+          id="preview-properties"
+          role="tabpanel"
+          aria-labelledby="preview-tab"
+        >
+          <div class="property-section">
+            <h2>Desktop</h2>
+            <dl>
+              <div>
+                <dt>Browser</dt>
+                <dd>Microsoft Edge</dd>
+              </div>
+              <div>
+                <dt>Mode</dt>
+                <dd>View only</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="property-section">
+            <h2>Preview</h2>
+            <label class="property-row" for="frame-rate"
+              ><span>Frame rate</span
+              ><select id="frame-rate">
+                <option value="30">30 fps</option>
+                <option value="60">60 fps</option>
+              </select></label
+            ><label class="property-row" for="scale"
+              ><span>Scale</span
+              ><select id="scale">
+                <option value="fit">Fit to window</option>
+                <option value="actual">100%</option>
+              </select></label
+            >
+            <dl>
+              <div>
+                <dt>Resolution</dt>
+                <dd id="resolution">—</dd>
+              </div>
+              <div>
+                <dt>Delivered</dt>
+                <dd id="delivered-fps">—</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="property-section">
+            <h2>Active tab</h2>
+            <label class="sr-only" for="tab-picker">Choose an agent tab</label
+            ><select id="tab-picker" class="tab-picker" disabled></select>
+            <p id="tab-location" class="tab-location">No tab selected</p>
+          </div>
+        </section>
+        <section
+          id="session-properties"
+          role="tabpanel"
+          aria-labelledby="session-tab"
+          hidden
+        >
+          <div class="property-section">
+            <h2>Local agent</h2>
+            <dl>
+              <div>
+                <dt>Status</dt>
+                <dd id="session-agent-state">Connecting</dd>
+              </div>
+              <div>
+                <dt>Runtime</dt>
+                <dd>Native desktop</dd>
+              </div>
+              <div>
+                <dt>Connection</dt>
+                <dd id="session-connection">Connecting</dd>
+              </div>
+              <div>
+                <dt>Tabs</dt>
+                <dd id="session-tab-count">0</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="property-section">
+            <h2>Authorized sessions</h2>
+            <p id="session-domains">No sessions imported</p>
+          </div>
+        </section>
+        <footer class="inspector-footer">
+          <img class="icon" src="/icons/lock-simple.svg" alt="" /><span
+            >On this computer</span
+          >
+        </footer>
+      </aside>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

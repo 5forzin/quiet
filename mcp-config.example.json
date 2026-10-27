@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "quiet-desktop": {
+      "command": "node",
+      "args": [
+        "C:/path/to/quiet/src/mcp.mjs"
+      ]
+    }
+  }
+}
