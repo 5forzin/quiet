@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spectrum · Quiet</title><link rel="stylesheet" href="/demo.css"></head>
+<body>
+  <header><a class="wordmark" href="/" aria-label="Quiet"><img src="/quiet-icon.png" alt="" width="28" height="28">Quiet</a><span class="breadcrumb">Playground</span><button id="play" class="icon-button" aria-label="Pause motion"><svg viewBox="0 0 20 20" aria-hidden="true"><path id="play-icon" d="M7 5v10M13 5v10"/></svg></button></header>
+  <main>
+    <div class="heading"><span class="eyebrow">EXPERIMENT 001</span><h1>Spectrum</h1><p>Make space for a different perspective.</p></div>
+    <canvas id="field" aria-label="Animated, flowing ribbons of color"></canvas>
+    <div class="caption"><span class="dot"></span><span id="scene-name">Prism</span><span class="divider"></span><span>Generative study</span></div>
+    <section class="controls" aria-label="Scene controls">
+      <div class="control-row"><label>Color</label><div class="swatches" role="group" aria-label="Color palette"><button class="swatch prism selected" data-palette="prism" aria-label="Prism" aria-pressed="true"></button><button class="swatch tide" data-palette="tide" aria-label="Tide" aria-pressed="false"></button><button class="swatch ember" data-palette="ember" aria-label="Ember" aria-pressed="false"></button></div></div>
+      <div class="control-row"><label for="motion">Motion</label><input id="motion" type="range" min="0" max="100" value="35"></div>
+      <div class="control-footer"><span id="result" role="status">Your space. Your pace.</span><button id="save">Save scene<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10m-4-4 4 4-4 4"/></svg></button></div>
+    </section>
+  </main>
+  <footer><span>QUIET / EXPLORATIONS</span><span>Rendered on this device</span></footer>
+  <script src="/demo.js"></script>
+</body>
+</html>

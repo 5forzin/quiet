@@ -172,6 +172,8 @@ test('real MV3 extension transfers only approved synthetic sessions without expo
   t.after(() => bridge.close());
   const testRoot = await mkdtemp(path.join(ROOT, '.runtime', 'extension-test-'));
   const extension = path.join(testRoot, 'extension'); await mkdir(extension);
+  await mkdir(path.join(extension, 'icons'));
+  for (const name of ['16', '32', '48', '128']) await copyFile(path.join(ROOT, 'extension', 'icons', `icon-${name}.png`), path.join(extension, 'icons', `icon-${name}.png`));
   for (const file of ['manifest.json', 'worker.js', 'popup.html', 'popup.js', 'popup.css']) await copyFile(path.join(ROOT, 'extension', file), path.join(extension, file));
   const manifest = JSON.parse(await readFile(path.join(extension, 'manifest.json'), 'utf8'));
   manifest.content_security_policy.extension_pages = `script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:${bridge.port}`;
@@ -238,7 +240,7 @@ test('real MV3 extension transfers only approved synthetic sessions without expo
   await popup.locator('main').screenshot({ path: path.join(ROOT, 'test-results', 'session-consent.png') });
   stage('Authorizing selected fixture sessions.');
   await popup.locator('#share').click();
-  await popup.getByRole('status').filter({ hasText: 'cookies transferred locally' }).waitFor({ timeout: 7000 });
+  await popup.getByRole('status').filter({ hasText: 'Shared 2 sites' }).waitFor({ timeout: 7000 });
   assert.equal(observed.find(cookie => cookie.name === 'sessionid').value, fixtureSecret);
   assert.equal(observed.find(cookie => cookie.name === 'sessionid').httpOnly, true);
   assert.ok(observed.some(cookie => cookie.name === 'fixture_second'));

@@ -8,14 +8,14 @@ let domains = [];
 const selected = new Set();
 function render(next) {
   state = next || state;
-  status.textContent = state.message || 'Disconnected.';
+  status.textContent = state.message || '';
   share.disabled = !state.connected || state.busy || !selected.size;
-  share.textContent = state.busy ? 'Preparing desktop…' : 'Authorize sessions';
+  share.textContent = state.busy ? 'Sharing…' : 'Share sessions';
   const connection = document.querySelector('#connection');
-  connection.textContent = state.connected ? 'Connected locally' : 'Offline';
+  connection.textContent = state.connected ? 'Connected' : 'Offline';
   connection.classList.toggle('online', Boolean(state.connected));
   document.querySelector('#connect').hidden = Boolean(state.connected);
-  document.querySelector('#count').textContent = selected.size + ' of ' + domains.length + ' domains';
+  document.querySelector('#count').textContent = selected.size + ' selected';
   selectAll.checked = domains.length > 0 && selected.size === domains.length;
   selectAll.indeterminate = selected.size > 0 && selected.size < domains.length;
   selectAll.disabled = Boolean(state.busy);
@@ -28,7 +28,7 @@ function renderSites() {
     const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selected.has(item.domain); checkbox.disabled = Boolean(state.busy);
     checkbox.onchange = () => { checkbox.checked ? selected.add(item.domain) : selected.delete(item.domain); render(); };
     const name = document.createElement('span'); name.textContent = item.domain;
-    const count = document.createElement('small'); count.textContent = item.count;
+    const count = document.createElement('small'); count.textContent = item.count; count.title = item.count + ' cookies';
     label.append(checkbox, name, count); sites.append(label);
   }
   if (!visible.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = domains.length ? 'No matching sites.' : 'No transferable cookies found.'; sites.append(empty); }

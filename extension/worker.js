@@ -4,7 +4,7 @@ let socket;
 let ready = false;
 let heartbeat;
 let transferTimer;
-let state = { connected: false, busy: false, message: 'Start the local bridge to connect.' };
+let state = { connected: false, busy: false, message: 'Open Quiet to connect.' };
 async function publish(next) { state = { ...state, ...next }; await chrome.storage.session.set({ state }); }
 const domainOf = cookie => cookie.domain.replace(/^\./, '').toLowerCase();
 
@@ -16,19 +16,19 @@ function connect() {
     const message = JSON.parse(event.data);
     if (message.type === 'ready') {
       ready = true;
-      await publish({ connected: true, message: 'Local bridge connected.' });
+      await publish({ connected: true, message: '' });
       clearInterval(heartbeat);
       heartbeat = setInterval(() => { if (socket.readyState === WebSocket.OPEN) socket.send('{"type":"ping"}'); }, 20000);
     }
     if (message.type === 'imported') {
       clearTimeout(transferTimer);
-      await publish({ busy: false, transferred: true, message: message.cookieCount + ' cookies transferred locally across ' + message.domainCount + ' domains. Site logins still need verification.' });
+      await publish({ busy: false, transferred: true, message: 'Shared ' + message.domainCount + ' sites. Check their sign-in.' });
     }
     if (message.type === 'import-error') { clearTimeout(transferTimer); await publish({ busy: false, message: message.error }); }
   };
   socket.onclose = () => {
     ready = false; clearInterval(heartbeat); clearTimeout(transferTimer);
-    publish({ connected: false, busy: false, message: 'Local bridge disconnected. Start it to continue.' });
+    publish({ connected: false, busy: false, message: 'Open Quiet to reconnect.' });
   };
   socket.onerror = () => {};
 }
@@ -47,13 +47,13 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       respond({ domains: [...counts].sort(([a], [b]) => a.localeCompare(b)).map(([domain, count]) => ({ domain, count })), skipped: all.length - supported.length });
       return;
     }
-    if (!ready || socket.readyState !== WebSocket.OPEN) throw new Error('Start the local bridge to continue.');
+    if (!ready || socket.readyState !== WebSocket.OPEN) throw new Error('Open Quiet to connect.');
     if (state.busy) throw new Error('A transfer is already running.');
     if (!Array.isArray(message.approvedDomains) || !message.approvedDomains.length) throw new Error('Select at least one site.');
     const approved = new Set(message.approvedDomains);
     const cookies = supported.filter(cookie => approved.has(domainOf(cookie)));
     if (!cookies.length) throw new Error('No transferable cookies remain for the selected sites.');
-    await publish({ busy: true, transferred: false, message: 'Preparing the native desktop and transferring selected cookies…' });
+    await publish({ busy: true, transferred: false, message: '' });
     socket.send(JSON.stringify({ type: 'share-sessions', approvedDomains: [...approved], cookies }));
     transferTimer = setTimeout(() => publish({ busy: false, message: 'The transfer has not been confirmed. Check the local bridge before retrying.' }), 60000);
     respond({ ok: true });
