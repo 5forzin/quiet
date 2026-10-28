@@ -29,8 +29,8 @@ const agent = new AgentBrowser({ directory: await mkdtemp(path.join(ROOT, '.runt
 let preview, browser;
 try {
   const tab = await agent.open(`http://127.0.0.1:${fixture.address().port}/`);
-  await agent.run({ action: 'wait', id: tab.id, text: 'Working note' });
   const page = await agent.read(tab.id);
+  await agent.run({ action: 'wait', id: tab.id, text: 'Working note' });
   await agent.run({ action: 'fill', id: tab.id, ref: page.elements.find(element => element.name === 'Note').ref, text: 'Keep the preview large.\nKeep my desktop free.' });
   await agent.run({ action: 'click', id: tab.id, ref: page.elements.find(element => element.name === 'Save note').ref });
   await agent.run({ action: 'wait', id: tab.id, text: 'Note saved' });

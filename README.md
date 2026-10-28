@@ -74,11 +74,11 @@ For development, set `$env:QUIET_AUTO_UPDATE = '0'` to disable network checks. A
 
 ## Watch and control
 
-Click the mini control to expand it. Drag the collapsed control to move it. Closing it leaves the agent running.
+Click the mini control to expand it. Drag it to move it. Open the desktop or pause the agent from the bottom bar. The controls at the top right collapse or close the mini; closing it leaves the agent running.
 
 <table>
-<tr><td align="center" width="240"><strong>Collapsed</strong></td><td align="center" width="320"><strong>Expanded</strong></td></tr>
-<tr><td align="center"><img src="docs/assets/mini-collapsed.png" alt="Collapsed native mini control" width="184"></td><td align="center"><img src="docs/assets/mini-expanded.png" alt="Expanded native mini control with open and pause actions" width="276"></td></tr>
+<tr><td align="center" width="260"><strong>Collapsed</strong></td><td align="center" width="360"><strong>Expanded</strong></td></tr>
+<tr><td align="center"><img src="docs/assets/mini-collapsed.png" alt="Collapsed native mini control" width="214"></td><td align="center"><img src="docs/assets/mini-expanded.png" alt="Expanded native mini control with open and pause actions" width="320"></td></tr>
 </table>
 
 The viewer offers Fit/100%, full screen, keep on top, preview pause and 30/60 fps targets. The counter reports frames actually presented; 60 fps is a target, not a guarantee.
