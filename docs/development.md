@@ -14,9 +14,9 @@ npm run setup:mini
 
 Setup creates `.runtime/config.json`, `extension/manifest.json`, `extension/connection.local.js` and `mcp-config.local.json`. These files belong to the installation and are ignored by Git. The checked-in extension template and MCP example stay portable.
 
-Run `npm run start:background` to start the bridge. `npm start` keeps diagnostics in the terminal. `npm run preview` opens the mini control; `npm run preview -- --viewer` opens the viewer directly. These launchers check for updates before starting. `Quiet.cmd` opens the bridge and mini control together.
+Run `npm run start:background` to start the bridge. `npm start` keeps diagnostics in the terminal. `npm run preview` opens the mini control; `npm run preview -- --viewer` opens the viewer directly. Source launchers do not update the checkout. `Quiet.cmd` opens the bridge and mini control together.
 
-Set `$env:QUIET_AUTO_UPDATE = '0'` when developing to disable network checks. `npm run update` explicitly checks even with this variable set. The updater only accepts the official origin on `main` with a clean worktree and a fast-forward history. It uses `.runtime/update.lock` to serialize installations and `.runtime/updates.json` to resume a failed build. It never stops running services to apply an update.
+Installed builds carry an `installation.json` marker and store user data separately in `%LOCALAPPDATA%\Quiet`. Only installed builds check stable GitHub releases. Set `$env:QUIET_AUTO_UPDATE = '0'` to disable their network checks. `npm run update` checks immediately. Checks use a local process lock, reject draft/prerelease metadata and verify the asset SHA-256 before handing off to the native update helper.
 
 `npm run quit` or `Quit.cmd` stops this installation's services, mini control and viewer. Connected MCP clients must be closed separately before updating.
 
@@ -32,7 +32,7 @@ npm run test:integration
 
 | Suite | What it checks |
 | --- | --- |
-| Unit | Session scope, cookie normalization, command validation, authentication, response redaction and source updates with local Git remotes. |
+| Unit | Session scope, cookie normalization, command validation, authentication, response redaction and stable release selection, download integrity, update locking and offline behavior. |
 | Mini | Authenticated native controls and opening without activation. |
 | Pointer | Trusted hover/click events, coordinate bounds, owned targets, pause interruption, MCP tools and unchanged physical input. |
 | Integration | Native desktop lifecycle, shell visibility, synthetic authenticated workflows, extension consent and viewer controls. |
@@ -41,13 +41,21 @@ Native suites require an interactive Windows session and use temporary browser p
 
 GitHub Actions runs unit tests on Node.js 22 and 24 and compiles the Windows hosts. It does not claim coverage of interactive desktop behavior on hosted runners.
 
+## Installer
+
+Install Inno Setup 6.7+ or run `scripts/setup-installer.ps1` to prepare the pinned compiler. Then run `npm run build:release`. The build uses an explicit file list, installs production dependencies into a new staging directory, bundles the current Node executable and its license, and compiles all native hosts. Output is written to `dist`, including `SHA256SUMS.txt`.
+
+Use Node 24.20.0 for release builds. Pushing a matching `vX.Y.Z` tag runs the Windows build and creates a **draft** GitHub release. Test its installer before publishing the release as latest. The updater cannot install drafts.
+
+The installer registers a per-user Windows uninstaller. Uninstall removes program files and shortcuts; it keeps user data. Never package `.runtime`, browser profiles, generated extension files or local MCP configuration.
+
 ## Documentation captures
 
 ```powershell
 npm run docs:capture
 ```
 
-This launches a temporary Edge profile on a separate native desktop, operates a local demo page, then captures the actual viewer with headless Edge. The page is labeled as sample content. No personal account, session, wallpaper or desktop file is used in these captures.
+This launches a temporary Edge profile on a separate native desktop, operates a local demo page, then captures the actual viewer with headless Edge. The page is the local Spectrum study in `docs/demo`, with palette, motion and save controls. No personal account, session, wallpaper or desktop file is used in these captures.
 
 The consent and native-control images come from the synthetic extension and mini-control test runs. Copy only the selected UI captures into `docs/assets`; keep generated configuration and private test metadata out of the repository.
 

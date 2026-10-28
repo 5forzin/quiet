@@ -1,12 +1,14 @@
 <div align="center">
 
+<img src="assets/quiet-icon.png" width="80" alt="Quiet">
+
 # Quiet
 
 Run a browser agent on a separate Windows desktop.
 
 **Windows · Microsoft Edge · MCP**
 
-[Get started](#get-started) · [How it works](#how-it-works) · [Agent tools](#connect-your-agent) · [Development](docs/development.md)
+[Download for Windows](https://github.com/5forzin/quiet/releases/latest) · [How it works](#how-it-works) · [Agent tools](#connect-your-agent) · [Development](docs/development.md)
 
 </div>
 
@@ -16,7 +18,7 @@ Run a browser agent on a separate Windows desktop.
 
 Quiet gives an agent its own Edge window on a native Win32 desktop. Watch it work in a live preview while you keep using your normal desktop and mouse. Reuse selected browser sessions through an extension that asks for your approval.
 
-This is an early Windows MVP. It provides tools for your existing agent client; it does not include a model or an autonomous agent loop.
+Quiet provides tools for your existing agent client. It does not include a model or an autonomous agent loop.
 
 ## What it does
 
@@ -35,20 +37,15 @@ A successful cookie import does not prove a site is signed in. Read the resultin
 
 ## Get started
 
-You need **Windows, Microsoft Edge, Git, Node.js 22+** and the Windows **.NET Framework C# compiler**. No administrator access, .NET SDK or model API key is required to run Quiet itself.
+Download the [Windows installer](https://github.com/5forzin/quiet/releases/latest). It includes the runtime and native hosts. You need **Windows 10 2004 or later, x64, and Microsoft Edge**. Git, Node.js and administrator access are not required.
 
-```powershell
-git clone https://github.com/5forzin/quiet.git
-cd quiet
-.\Setup.cmd
-```
+1. Install Quiet and open it from the Start menu.
+2. In your normal Edge profile, open `edge://extensions`, enable **Developer mode**, and choose **Load unpacked**.
+3. Select `%LOCALAPPDATA%\Quiet\extension`. The Start menu's **Browser extension** shortcut opens this folder.
+4. Open **Quiet** in Edge, select your sites and click **Share sessions**.
+5. Click the mini control, then **Open desktop**.
 
-Setup installs dependencies, builds the native desktop host, generates local pairing files and starts the bridge.
-
-1. In the Edge profile with the sessions you want to share, open `edge://extensions`.
-2. Enable **Developer mode**, select **Load unpacked**, and choose the project's `extension` folder.
-3. Open **Quiet Desktop Session Bridge**. Review the selected domains and click **Authorize sessions**.
-4. Run `.\Quiet.cmd`, then click **Open agent desktop** in the mini control.
+The installer is not code-signed. Windows may show an unknown-publisher warning.
 
 <details>
 <summary><strong>What session authorization looks like</strong></summary>
@@ -60,17 +57,15 @@ The extension shows domain names and counts before authorization. This capture u
 
 </details>
 
-After restarting Windows, open `Quiet.cmd`. It starts the bridge and mini control. `Preview.cmd` also starts the bridge when needed. For terminal diagnostics, use `Start.cmd`. Quiet does not install a Windows startup entry.
+After restarting Windows, open **Quiet** from the Start menu. It starts the bridge and mini control. Quiet does not add a Windows startup entry.
 
 ## Updates
 
-The launchers automatically check `5forzin/quiet` on GitHub, at most once every six hours. When Quiet is closed and the checkout is clean on `main`, they fast-forward the source, install the locked dependencies and rebuild the native hosts before starting.
+The installed app checks GitHub's latest stable release before launch, at most once every six hours. It verifies the installer's SHA-256, applies the update while Quiet is closed, then reopens the app. Drafts, prereleases and commits on `main` are never installed.
 
-Sessions, profiles and local pairing files stay in place. An active bridge, preview, mini control or MCP client defers the update to a later launch. Local changes, another branch or different history are left untouched. Without internet, the installed version still starts.
+An active agent, viewer or MCP client defers the update. Offline checks and failed downloads leave the installed version usable. Use **Check for updates** in the Start menu to check immediately. Reload the unpacked extension in `edge://extensions` after an extension update; Edge requires this manual step.
 
-Use `Quit.cmd` to stop the bridge, preview and Quiet's own windows. Close connected MCP clients, then run `Update.cmd` or `npm run update` to check immediately. If installation fails, startup stops and the next launch retries the build; diagnostics are in `.runtime/update.log`. After an update, reload the unpacked extension in `edge://extensions` to pick up extension changes. Edge requires this manual step.
-
-For development, set `$env:QUIET_AUTO_UPDATE = '0'` to disable network checks. An incomplete installation still needs to finish before Quiet starts. These updates follow the repository's `main` branch; there is no signed installer or release channel yet.
+The program lives in `%LOCALAPPDATA%\Programs\Quiet`. Sessions, profiles, pairing and preferences live in `%LOCALAPPDATA%\Quiet` and survive updates and uninstall. Source checkouts never update themselves.
 
 ## Watch and control
 
@@ -96,7 +91,7 @@ Use **…** to open tabs, settings, session details or activity. Drag a panel's 
 
 ## Connect your agent
 
-Add the generated **`mcp-config.local.json`** to your MCP client's configuration. It contains the correct executable and project paths for your installation. A portable example is available in [mcp-config.example.json](mcp-config.example.json).
+Add the generated **`%LOCALAPPDATA%\Quiet\mcp-config.local.json`** to your MCP client's configuration. It contains the correct executable and project paths for your installation. A portable example is available in [mcp-config.example.json](mcp-config.example.json).
 
 Keep the bridge running. Start the preview service before using screenshot or pointer tools.
 
@@ -120,7 +115,7 @@ Pointer coordinates are **CSS pixels in the page viewport**, excluding browser c
 | Pointer | Works inside browser pages. No control of other Windows apps, browser chrome or native dialogs. |
 | Isolation | A separate desktop separates windows; it is **not a filesystem or permissions sandbox**. |
 | Data | Session transfer and preview stay local. Your MCP client determines where page text and screenshots are processed. |
-| Distribution | Source build and manually loaded extension. No signed installer or extension-store listing. |
+| Distribution | Windows installer with bundled runtime. The installer is unsigned; the extension is loaded manually. |
 
 Local services bind to `127.0.0.1` and require pairing credentials. Browser profiles, tokens, generated configuration and private captures are excluded from this repository. [Architecture and data flow →](docs/architecture.md)
 

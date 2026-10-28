@@ -11,7 +11,7 @@ Quiet runs an Edge process on a separate Win32 desktop in the current Windows se
 | Edge extension | Reviews cookie-domain metadata and transfers selected cookies after authorization. |
 | Bridge · `127.0.0.1:9467` | Checks the local pairing token and extension origin, imports sessions, and handles browser commands. |
 | Native desktop host | Creates the desktop and launches the agent browser in a Windows job object. |
-| Agent Edge | Keeps its own persistent profile in `.runtime/agent-profile`. |
+| Agent Edge | Keeps its own persistent profile in `%LOCALAPPDATA%\Quiet\agent-profile` (or `.runtime/agent-profile` in development). |
 | Preview service · `127.0.0.1:9468` | Authenticates viewers, captures the agent desktop, and handles pointer commands. |
 | Workspace host | Starts the agent's Explorer shell and hides its icon view and taskbar. |
 | Mini control | Opens the viewer and pauses/resumes the agent from a nonactivating native window. |
@@ -21,7 +21,7 @@ The main desktop job owns the agent browser. The workspace job owns only the ext
 
 ## Session transfer
 
-The extension reads domain names and cookie counts for review. Cookie values leave the extension only after **Authorize sessions**, and travel to the paired loopback service. The bridge imports approved cookies through the agent browser's local DevTools connection.
+The extension reads domain names and cookie counts for review. Cookie values leave the extension only after **Share sessions**, and travel to the paired loopback service. The bridge imports approved cookies through the agent browser's local DevTools connection.
 
 The source cookies are not modified. There is no cookie-export command or continuous session synchronization. Partitioned cookies are excluded. Setup generates a per-installation extension identity and local pairing configuration.
 
@@ -45,4 +45,10 @@ A separate Win32 desktop separates windows. It does **not** isolate files, proce
 
 The session bridge and preview run locally. An MCP client can forward page text and screenshots to its chosen model provider. Its data handling is separate from Quiet's local transport.
 
-`.runtime/`, generated extension pairing files, browser profiles and test output are excluded from Git. Do not distribute a configured installation as a source archive; distribute the repository and run setup on the destination machine.
+`.runtime/`, generated extension pairing files, browser profiles and test output are excluded from Git. The installer is built from an explicit file list and initializes pairing on the destination machine. Installed user data stays outside the program directory.
+
+## Stable updates
+
+Installed builds query GitHub's latest-release endpoint. The updater requires a published non-prerelease tag with a numeric version, an installer asset under the official repository and a SHA-256 digest. It does not fetch Git branches. Active services defer installation.
+
+The download is verified before the native update helper receives it. The helper waits for the launcher to exit, verifies the file again, runs the per-user installer and reopens Quiet. The installer preserves the separate data directory. Source checkouts do not run this update path.
