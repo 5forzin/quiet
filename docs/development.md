@@ -14,7 +14,11 @@ npm run setup:mini
 
 Setup creates `.runtime/config.json`, `extension/manifest.json`, `extension/connection.local.js` and `mcp-config.local.json`. These files belong to the installation and are ignored by Git. The checked-in extension template and MCP example stay portable.
 
-Run `npm run start:background` to start the bridge. `npm start` keeps diagnostics in the terminal. `npm run preview` opens the mini control; `npm run preview -- --viewer` opens the viewer directly.
+Run `npm run start:background` to start the bridge. `npm start` keeps diagnostics in the terminal. `npm run preview` opens the mini control; `npm run preview -- --viewer` opens the viewer directly. These launchers check for updates before starting. `Quiet.cmd` opens the bridge and mini control together.
+
+Set `$env:QUIET_AUTO_UPDATE = '0'` when developing to disable network checks. `npm run update` explicitly checks even with this variable set. The updater only accepts the official origin on `main` with a clean worktree and a fast-forward history. It uses `.runtime/update.lock` to serialize installations and `.runtime/updates.json` to resume a failed build. It never stops running services to apply an update.
+
+`npm run quit` or `Quit.cmd` stops this installation's services, mini control and viewer. Connected MCP clients must be closed separately before updating.
 
 ## Tests
 
@@ -28,7 +32,7 @@ npm run test:integration
 
 | Suite | What it checks |
 | --- | --- |
-| Unit | Session scope, cookie normalization, command validation, authentication and response redaction. |
+| Unit | Session scope, cookie normalization, command validation, authentication, response redaction and source updates with local Git remotes. |
 | Mini | Authenticated native controls and opening without activation. |
 | Pointer | Trusted hover/click events, coordinate bounds, owned targets, pause interruption, MCP tools and unchanged physical input. |
 | Integration | Native desktop lifecycle, shell visibility, synthetic authenticated workflows, extension consent and viewer controls. |

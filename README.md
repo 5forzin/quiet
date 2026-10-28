@@ -35,7 +35,7 @@ A successful cookie import does not prove a site is signed in. Read the resultin
 
 ## Get started
 
-You need **Windows, Microsoft Edge, Node.js 22+** and the Windows **.NET Framework C# compiler**. No administrator access, .NET SDK or model API key is required to run Quiet itself.
+You need **Windows, Microsoft Edge, Git, Node.js 22+** and the Windows **.NET Framework C# compiler**. No administrator access, .NET SDK or model API key is required to run Quiet itself.
 
 ```powershell
 git clone https://github.com/5forzin/quiet.git
@@ -48,7 +48,7 @@ Setup installs dependencies, builds the native desktop host, generates local pai
 1. In the Edge profile with the sessions you want to share, open `edge://extensions`.
 2. Enable **Developer mode**, select **Load unpacked**, and choose the project's `extension` folder.
 3. Open **Quiet Desktop Session Bridge**. Review the selected domains and click **Authorize sessions**.
-4. Run `.\Preview.cmd`, then click **Open agent desktop** in the mini control.
+4. Run `.\Quiet.cmd`, then click **Open agent desktop** in the mini control.
 
 <details>
 <summary><strong>What session authorization looks like</strong></summary>
@@ -60,7 +60,17 @@ The extension shows domain names and counts before authorization. This capture u
 
 </details>
 
-After restarting Windows, run `npm run start:background` before opening the preview. For terminal diagnostics, use `Start.cmd`. Quiet does not install a startup entry.
+After restarting Windows, open `Quiet.cmd`. It starts the bridge and mini control. `Preview.cmd` also starts the bridge when needed. For terminal diagnostics, use `Start.cmd`. Quiet does not install a Windows startup entry.
+
+## Updates
+
+The launchers automatically check `5forzin/quiet` on GitHub, at most once every six hours. When Quiet is closed and the checkout is clean on `main`, they fast-forward the source, install the locked dependencies and rebuild the native hosts before starting.
+
+Sessions, profiles and local pairing files stay in place. An active bridge, preview, mini control or MCP client defers the update to a later launch. Local changes, another branch or different history are left untouched. Without internet, the installed version still starts.
+
+Use `Quit.cmd` to stop the bridge, preview and Quiet's own windows. Close connected MCP clients, then run `Update.cmd` or `npm run update` to check immediately. If installation fails, startup stops and the next launch retries the build; diagnostics are in `.runtime/update.log`. After an update, reload the unpacked extension in `edge://extensions` to pick up extension changes. Edge requires this manual step.
+
+For development, set `$env:QUIET_AUTO_UPDATE = '0'` to disable network checks. An incomplete installation still needs to finish before Quiet starts. These updates follow the repository's `main` branch; there is no signed installer or release channel yet.
 
 ## Watch and control
 
@@ -126,4 +136,4 @@ npm run test:integration
 
 The native tests use temporary profiles and synthetic sessions in an interactive Windows session. CI runs unit tests and compiles the Windows hosts. [Build commands, test coverage and screenshot capture →](docs/development.md)
 
-Stop the bridge and its owned browser with `node src/cli.mjs stop`. The agent profile persists for the next run.
+Stop Quiet with `Quit.cmd`. To stop only the bridge and its owned browser, use `node src/cli.mjs stop`. The agent profile persists for the next run.
