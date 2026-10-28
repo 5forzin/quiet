@@ -3,12 +3,12 @@ import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
-import { ROOT } from '../src/config.mjs';
+import { ROOT, DATA_ROOT } from '../src/config.mjs';
 
 const ports = [];
 for (const name of ['preview.json', 'config.json']) {
   let config;
-  try { config = JSON.parse(await readFile(path.join(ROOT, '.runtime', name), 'utf8')); }
+  try { config = JSON.parse(await readFile(path.join(DATA_ROOT, name), 'utf8')); }
   catch (error) { if (error.code === 'ENOENT') continue; throw error; }
   ports.push(config.port);
   try {
@@ -21,9 +21,9 @@ for (const name of ['preview.json', 'config.json']) {
   }
 }
 // Match this installation's mini executable and viewer profile, never the user's Edge profile.
-const script = `$root = $env:QUIET_QUIT_ROOT; $mini = Join-Path $root 'bin\\MiniMonitor.exe'; $profile = '--user-data-dir=' + (Join-Path $root '.runtime\\monitor-profile'); Get-CimInstance Win32_Process -Filter "Name='MiniMonitor.exe' OR Name='msedge.exe'" | Where-Object { $_.ExecutablePath -eq $mini -or ($_.Name -eq 'msedge.exe' -and $_.CommandLine -and $_.CommandLine.Contains($profile) -and $_.CommandLine -notlike '*--type=*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -ErrorAction Stop; Wait-Process -Id $_.ProcessId -Timeout 10 -ErrorAction SilentlyContinue }`;
+const script = `$root = $env:QUIET_QUIT_ROOT; $mini = Join-Path $root 'bin\\MiniMonitor.exe'; $profile = '--user-data-dir=' + (Join-Path $env:QUIET_QUIT_DATA 'monitor-profile'); Get-CimInstance Win32_Process -Filter "Name='MiniMonitor.exe' OR Name='msedge.exe'" | Where-Object { $_.ExecutablePath -eq $mini -or ($_.Name -eq 'msedge.exe' -and $_.CommandLine -and $_.CommandLine.Contains($profile) -and $_.CommandLine -notlike '*--type=*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -ErrorAction Stop; Wait-Process -Id $_.ProcessId -Timeout 10 -ErrorAction SilentlyContinue }`;
 await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
-  windowsHide: true, timeout: 10000, env: { ...process.env, QUIET_QUIT_ROOT: path.resolve(ROOT) }
+  windowsHide: true, timeout: 10000, env: { ...process.env, QUIET_QUIT_ROOT: path.resolve(ROOT), QUIET_QUIT_DATA: path.resolve(DATA_ROOT) }
 });
 for (const port of ports) {
   let closed = false;

@@ -1,0 +1,45 @@
+name: Release installer
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.20.0
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Verify stable tag
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version" -or $version -notmatch '^\d+\.\d+\.\d+$') { throw 'Run from the matching stable version tag.' }
+      - name: Prepare installer compiler
+        shell: pwsh
+        run: ./scripts/setup-installer.ps1
+      - run: npm run build:release
+      - name: Test install, repair and uninstall
+        shell: pwsh
+        run: ./test/installer-smoke.ps1
+      - name: Save installer artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: quiet-windows-x64
+          path: dist/*
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $assets = (Get-ChildItem ./dist -File).FullName
+          gh release create $env:GITHUB_REF_NAME @assets --verify-tag --draft --title "Quiet $env:GITHUB_REF_NAME" --notes-file ./docs/releases/$env:GITHUB_REF_NAME.md

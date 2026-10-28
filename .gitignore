@@ -10,3 +10,6 @@ test-results/
 .env.*
 !.env.example
 *.log
+.build/
+dist/
+installation.json

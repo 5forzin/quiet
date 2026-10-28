@@ -1,11 +1,11 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { readFile, access } from 'node:fs/promises';
 import path from 'node:path';
-import { ROOT } from '../src/config.mjs';
+import { ROOT, DATA_ROOT } from '../src/config.mjs';
 
 async function connection() {
   try {
-    const config = JSON.parse(await readFile(path.join(ROOT, '.runtime', 'preview.json'), 'utf8'));
+    const config = JSON.parse(await readFile(path.join(DATA_ROOT, 'preview.json'), 'utf8'));
     const response = await fetch(`http://127.0.0.1:${config.port}/health`, { headers: { Authorization: `Bearer ${config.token}` }, signal: AbortSignal.timeout(1500) });
     return response.ok ? config : null;
   } catch { return null; }

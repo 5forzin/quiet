@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { path as humanPath } from 'ghost-cursor';
 import { Cdp } from './cdp.mjs';
-import { ROOT } from './config.mjs';
+import { ROOT, DATA_ROOT } from './config.mjs';
 import { pointerOverlay, pointerSchema } from './pointer.mjs';
 
 const OVERSHOOT_THRESHOLD = 500;
@@ -59,7 +59,7 @@ function sampleWaypoints(waypoints, fraction) {
 }
 
 export class PreviewAgent {
-  constructor({ directory = path.join(ROOT, '.runtime', 'agent-profile') } = {}) { this.directory = directory; this.sessions = new Map(); this.tail = Promise.resolve(); }
+  constructor({ directory = path.join(DATA_ROOT, 'agent-profile') } = {}) { this.directory = directory; this.sessions = new Map(); this.tail = Promise.resolve(); }
   async select(id, status) {
     if (!status.tabs.some(tab => tab.id === id)) throw new Error('The preview can only select agent-owned tabs.');
     if (!this.cdp || this.desktop !== status.desktop || this.cdp.socket.readyState !== 1) {

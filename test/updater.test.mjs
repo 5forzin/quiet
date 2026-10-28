@@ -1,133 +1,118 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ROOT } from '../src/config.mjs';
-import { updateInstallation, installationBusy } from '../src/updater.mjs';
 import net from 'node:net';
+import { updateInstallation, installationBusy, releaseInstaller, stableVersion, newerVersion } from '../src/updater.mjs';
 
-const execute = promisify(execFile);
-const git = async (cwd, ...args) => (await execute('git', args, { cwd, windowsHide: true })).stdout.trim();
-
-async function fixture(t) {
-  const area = await mkdtemp(path.join(os.tmpdir(), 'quiet-update-test-'));
-  t.after(async () => {
-    assert.equal(path.dirname(area), os.tmpdir());
-    await rm(area, { recursive: true, force: true, maxRetries: 4 });
-  });
-  const remote = path.join(area, 'origin.git');
-  const root = path.join(area, 'installation');
-  // Reuse real repository objects instead of creating commits under a test identity.
-  await git(area, 'clone', '--bare', '--no-hardlinks', ROOT, remote);
-  const target = await git(remote, 'rev-parse', 'HEAD');
-  const previous = await git(remote, 'rev-parse', 'HEAD~1');
-  await git(remote, 'update-ref', 'refs/heads/main', target);
-  await git(remote, 'symbolic-ref', 'HEAD', 'refs/heads/main');
-  await git(area, 'clone', '--no-hardlinks', remote, root);
-  await git(root, 'checkout', '-B', 'main', previous);
-  let prepared = 0;
-  const options = { root, remoteAllowed: url => url === remote, busy: async () => false, prepare: async () => { prepared++; } };
-  return { root, remote, target, previous, options, prepared: () => prepared };
+const bytes = Buffer.from('synthetic installer; never executed');
+function release(version = '1.1.0') {
+  const name = `Quiet-${version}-windows-x64.exe`;
+  return { tag_name: `v${version}`, draft: false, prerelease: false, published_at: '2026-10-28T00:00:00Z', assets: [{
+    name, browser_download_url: `https://github.com/5forzin/quiet/releases/download/v${version}/${name}`,
+    state: 'uploaded', size: bytes.length, digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}`
+  }] };
 }
-
-test('updater fast-forwards and rebuilds without changing local pairing or profiles', async t => {
-  const f = await fixture(t);
-  await mkdir(path.join(f.root, '.runtime', 'agent-profile'), { recursive: true });
-  const privateFiles = ['.runtime/config.json', '.runtime/agent-profile/Cookies', 'extension/connection.local.js', 'extension/manifest.json'];
-  for (const file of privateFiles) await writeFile(path.join(f.root, file), 'fixture-private-data');
-  const result = await updateInstallation(f.options);
-  assert.equal(result.status, 'updated');
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), f.target);
-  assert.equal(f.prepared(), 1);
-  for (const file of privateFiles) assert.equal(await readFile(path.join(f.root, file), 'utf8'), 'fixture-private-data');
-  assert.equal((await updateInstallation(f.options)).status, 'current');
-  assert.equal(f.prepared(), 1);
-});
-
-test('updater leaves tracked and untracked work untouched', async t => {
-  const f = await fixture(t);
-  for (const name of ['package.json', 'local-work.txt']) {
-    await writeFile(path.join(f.root, name), 'local work');
-    assert.equal((await updateInstallation(f.options)).reason, 'local changes');
-    assert.equal(await readFile(path.join(f.root, name), 'utf8'), 'local work');
-    if (name === 'package.json') await git(f.root, 'restore', '--', name);
+async function fixture(t) {
+  const area = await mkdtemp(path.join(os.tmpdir(), 'quiet-release-test-'));
+  t.after(async () => { assert.equal(path.dirname(area), os.tmpdir()); await rm(area, { recursive: true, force: true, maxRetries: 4 }); });
+  const root = path.join(area, 'app'), dataRoot = path.join(area, 'data');
+  await mkdir(root); await mkdir(dataRoot);
+  await writeFile(path.join(root, 'installation.json'), JSON.stringify({ repository: '5forzin/quiet', channel: 'stable', version: '1.0.0' }));
+  const requests = [], scheduled = [];
+  const options = { root, dataRoot, busy: async () => false, schedule: async args => scheduled.push(args), fetcher: async url => {
+    requests.push(url);
+    return url.includes('api.github.com') ? Response.json(release()) : new Response(bytes);
+  } };
+  return { root, dataRoot, requests, scheduled, options };
+}
+test('stable releases require a published version, official installer URL and SHA-256', () => {
+  assert.equal(releaseInstaller(release()).version, '1.1.0');
+  for (const changes of [{ draft: true }, { prerelease: true }, { published_at: null }, { tag_name: 'v1.1.0-beta.1' }, { assets: [] }]) {
+    assert.equal(releaseInstaller({ ...release(), ...changes }), null);
   }
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), f.previous);
-  assert.equal(f.prepared(), 0);
+  for (const changes of [{ digest: null }, { digest: 'sha256:invalid' }, { state: 'new' }, { size: -1 }, { size: 300 * 1024 * 1024 }, { browser_download_url: 'https://example.com/installer.exe' }]) {
+    const value = release(); Object.assign(value.assets[0], changes); assert.equal(releaseInstaller(value), null);
+  }
+  assert.equal(stableVersion('v1.0.0-rc.1'), null);
+  assert.equal(stableVersion('1.01.0'), null);
+  assert.equal(newerVersion('1.10.0', '1.9.9'), true);
+  assert.equal(newerVersion('1.0.0', '2.0.0'), false);
 });
-
-test('updater rejects forks, other branches and a local history ahead of upstream', async t => {
+test('updates download and verify a stable installer without changing settings or the installed files', async t => {
   const f = await fixture(t);
-  assert.equal((await updateInstallation({ ...f.options, remoteAllowed: () => false })).reason, 'unrecognized upstream');
-  await git(f.root, 'checkout', '-b', 'feature');
-  assert.equal((await updateInstallation(f.options)).reason, 'not on main');
-  await git(f.root, 'checkout', 'main');
-  await git(f.root, 'merge', '--ff-only', f.target);
-  await git(f.remote, 'update-ref', 'refs/heads/main', f.previous);
-  assert.equal((await updateInstallation(f.options)).reason, 'local history differs from upstream');
-  assert.equal(f.prepared(), 0);
+  await writeFile(path.join(f.root, 'app-file'), 'installed version');
+  await writeFile(path.join(f.dataRoot, 'config.json'), 'private fixture');
+  assert.equal((await updateInstallation(f.options)).status, 'installing');
+  assert.equal(f.scheduled.length, 1);
+  assert.deepEqual(await readFile(f.scheduled[0].installer), bytes);
+  assert.equal(await readFile(path.join(f.root, 'app-file'), 'utf8'), 'installed version');
+  assert.equal(await readFile(path.join(f.dataRoot, 'config.json'), 'utf8'), 'private fixture');
+  assert.equal(f.requests[0], 'https://api.github.com/repos/5forzin/quiet/releases/latest');
+  assert.equal(f.requests.some(url => /\/main|\/git\/|\/commits/.test(url)), false);
 });
-
-test('active services defer updates, including when a service starts during fetch', async t => {
+test('source checkouts never fetch main or install releases', async t => {
+  const f = await fixture(t); await rm(path.join(f.root, 'installation.json'));
+  assert.equal((await updateInstallation(f.options)).status, 'development');
+  assert.equal(f.requests.length, 0); assert.equal(f.scheduled.length, 0);
+});
+test('drafts, prereleases and malformed stable assets never reach the installer', async t => {
+  const f = await fixture(t);
+  for (const value of [{ ...release(), prerelease: true }, { ...release(), draft: true }, release('1.1.0-rc.1'), { ...release(), assets: [] }]) {
+    assert.equal((await updateInstallation({ ...f.options, fetcher: async () => Response.json(value) })).status, 'unavailable');
+  }
+  assert.equal(f.scheduled.length, 0);
+});
+test('checks are limited to six hours and never downgrade', async t => {
+  const f = await fixture(t); let requests = 0;
+  const options = { ...f.options, now: () => 100000000, fetcher: async () => { requests++; return Response.json(release('0.9.0')); } };
+  assert.equal((await updateInstallation(options)).status, 'current');
+  assert.equal((await updateInstallation(options)).status, 'current');
+  assert.equal(requests, 1);
+  assert.equal((await updateInstallation({ ...options, force: true })).status, 'current');
+  assert.equal(requests, 2); assert.equal(f.scheduled.length, 0);
+});
+test('a running agent defers installation before fetching and after downloading', async t => {
   const f = await fixture(t);
   assert.equal((await updateInstallation({ ...f.options, busy: async () => true })).status, 'deferred');
-  let calls = 0;
-  assert.equal((await updateInstallation({ ...f.options, busy: async () => ++calls > 1 })).status, 'deferred');
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), f.previous);
+  assert.equal(f.requests.length, 0);
+  let checks = 0;
+  assert.equal((await updateInstallation({ ...f.options, busy: async () => ++checks > 1 })).status, 'deferred');
+  assert.equal(f.scheduled.length, 0);
 });
-
-test('failed preparation blocks launch and retries on the next launch without another fetch', async t => {
+test('checksum and size mismatches leave the installed version usable', async t => {
   const f = await fixture(t);
-  const failed = await updateInstallation({ ...f.options, prepare: async () => { throw new Error('fixture failure'); } });
-  assert.equal(failed.status, 'failed');
-  assert.equal(failed.required, true);
-  assert.equal(JSON.parse(await readFile(path.join(f.root, '.runtime', 'updates.json'))).pendingBuild, f.target);
-  const repaired = await updateInstallation({ ...f.options, check: false });
-  assert.equal(repaired.status, 'disabled');
-  assert.equal(f.prepared(), 1);
-  assert.equal(JSON.parse(await readFile(path.join(f.root, '.runtime', 'updates.json'))).pendingBuild, undefined);
+  for (const content of [Buffer.alloc(bytes.length), Buffer.alloc(bytes.length + 1), Buffer.alloc(2)]) {
+    const options = { ...f.options, fetcher: async url => url.includes('api.github.com') ? Response.json(release()) : new Response(content) };
+    assert.equal((await updateInstallation(options)).status, 'failed');
+  }
+  assert.equal(f.scheduled.length, 0);
+  assert.equal(JSON.parse(await readFile(path.join(f.root, 'installation.json'))).version, '1.0.0');
 });
-
-test('crash before fast-forward resumes the pending revision', async t => {
+test('offline, missing releases and disabled checks keep the installed version available', async t => {
   const f = await fixture(t);
-  await mkdir(path.join(f.root, '.runtime'));
-  await writeFile(path.join(f.root, '.runtime', 'updates.json'), JSON.stringify({ pendingBuild: f.target }));
-  assert.equal((await updateInstallation({ ...f.options, remoteAllowed: () => true, check: false })).status, 'disabled');
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), f.target);
-  assert.equal(f.prepared(), 1);
+  assert.equal((await updateInstallation({ ...f.options, fetcher: async () => { throw new Error('Offline'); } })).status, 'offline');
+  assert.equal((await updateInstallation({ ...f.options, fetcher: async () => new Response(null, { status: 404 }) })).status, 'current');
+  assert.equal((await updateInstallation({ ...f.options, check: false })).status, 'disabled');
+  assert.equal(f.scheduled.length, 0);
 });
-
-test('an unavailable upstream keeps the installed revision usable', async t => {
-  const f = await fixture(t);
-  const unavailable = path.join(f.root, 'missing.git');
-  await git(f.root, 'remote', 'set-url', 'origin', unavailable);
-  assert.equal((await updateInstallation({ ...f.options, remoteAllowed: () => true })).status, 'offline');
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), f.previous);
-  assert.equal((await updateInstallation({ ...f.options, remoteAllowed: () => true, check: false })).status, 'disabled');
-});
-
-test('update lock prevents overlapping installations', async t => {
-  const f = await fixture(t);
-  let release, started;
-  const blocked = new Promise(resolve => { release = resolve; });
+test('the update lock prevents overlapping installers and permits retry after failure', async t => {
+  const f = await fixture(t); let finish, started;
   const ready = new Promise(resolve => { started = resolve; });
-  const updating = updateInstallation({ ...f.options, prepare: async () => { started(); await blocked; } });
+  const blocked = new Promise(resolve => { finish = resolve; });
+  const updating = updateInstallation({ ...f.options, schedule: async () => { started(); await blocked; throw new Error('fixture failure'); } });
   await ready;
-  try { assert.equal((await updateInstallation(f.options)).status, 'locked'); }
-  finally { release(); }
-  assert.equal((await updating).status, 'updated');
+  try { assert.equal((await updateInstallation(f.options)).status, 'locked'); } finally { finish(); }
+  assert.equal((await updating).status, 'failed');
+  assert.equal((await updateInstallation(f.options)).status, 'installing');
 });
-
 test('busy detection catches a live bridge without sending credentials', async t => {
-  const area = await mkdtemp(path.join(os.tmpdir(), 'quiet-busy-test-'));
-  t.after(() => rm(area, { recursive: true, force: true }));
-  await mkdir(path.join(area, '.runtime'));
+  const f = await fixture(t);
   const server = net.createServer(socket => socket.destroy());
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
-  await writeFile(path.join(area, '.runtime', 'config.json'), JSON.stringify({ port: server.address().port }));
-  assert.equal(await installationBusy(area), true);
+  await writeFile(path.join(f.dataRoot, 'config.json'), JSON.stringify({ port: server.address().port }));
+  assert.equal(await installationBusy(f.root, f.dataRoot), true);
 });

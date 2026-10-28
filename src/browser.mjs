@@ -1,6 +1,6 @@
 import { mkdir, readFile, unlink, access } from 'node:fs/promises';
 import path from 'node:path';
-import { ROOT } from './config.mjs';
+import { ROOT, DATA_ROOT } from './config.mjs';
 import { NativeDesktop } from './native.mjs';
 import { Cdp } from './cdp.mjs';
 import { normalizeSession, webUrl } from './session.mjs';
@@ -9,7 +9,7 @@ import { pageAction } from './page.mjs';
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 export class AgentBrowser {
-  constructor({ directory = path.join(ROOT, '.runtime', 'agent-profile'), executable } = {}) {
+  constructor({ directory = path.join(DATA_ROOT, 'agent-profile'), executable } = {}) {
     this.directory = directory;
     this.executable = executable;
     this.tabs = new Map();

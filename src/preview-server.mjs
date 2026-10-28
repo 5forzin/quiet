@@ -6,14 +6,14 @@ import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { ROOT } from './config.mjs';
+import { ROOT, DATA_ROOT } from './config.mjs';
 import { sendCommand } from './client.mjs';
 import { DesktopCapture } from './preview-native.mjs';
 import { PreviewAgent } from './preview-agent.mjs';
 import { AgentWorkspace } from './workspace.mjs';
 import { pointerSchema } from './pointer.mjs';
 
-export const PREVIEW_CONFIG_PATH = path.join(ROOT, '.runtime', 'preview.json');
+export const PREVIEW_CONFIG_PATH = path.join(DATA_ROOT, 'preview.json');
 const same = (a, b) => { const x = Buffer.from(String(a || '')), y = Buffer.from(String(b || '')); return x.length === y.length && timingSafeEqual(x, y); };
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const execute = promisify(execFile);
@@ -172,11 +172,11 @@ export async function startPreview({ token = randomBytes(32).toString('hex'), po
 async function openMonitor(port, token) {
   const executable = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
   await access(executable);
-  const child = spawn(executable, [`--user-data-dir=${path.join(ROOT, '.runtime', 'monitor-profile')}`, `--app=http://127.0.0.1:${port}/#${token}`, '--no-first-run', '--no-default-browser-check', '--window-size=1280,760'], { cwd: ROOT, detached: true, windowsHide: false, stdio: 'ignore' });
+  const child = spawn(executable, [`--user-data-dir=${path.join(DATA_ROOT, 'monitor-profile')}`, `--app=http://127.0.0.1:${port}/#${token}`, '--no-first-run', '--no-default-browser-check', '--window-size=1280,760'], { cwd: ROOT, detached: true, windowsHide: false, stdio: 'ignore' });
   await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
   child.unref();
   // Edge may route this launch to its existing app process; pin the actual profile owner.
-  const profileFlag = `--user-data-dir=${path.join(ROOT, '.runtime', 'monitor-profile')}`.replaceAll("'", "''");
+  const profileFlag = `--user-data-dir=${path.join(DATA_ROOT, 'monitor-profile')}`.replaceAll("'", "''");
   const query = `Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${profileFlag}') -and $_.CommandLine -notlike '*--type=*' } | Select-Object -First 1 -ExpandProperty ProcessId`;
   try {
     const { stdout } = await execute('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', query], { windowsHide: true, timeout: 5000 });
@@ -189,7 +189,7 @@ async function openMonitor(port, token) {
 async function openMiniMonitor() {
   const executable = path.join(ROOT, 'bin', 'MiniMonitor.exe');
   await access(executable);
-  const child = spawn(executable, [], { cwd: ROOT, detached: true, windowsHide: false, stdio: 'ignore' });
+  const child = spawn(executable, [PREVIEW_CONFIG_PATH], { cwd: ROOT, detached: true, windowsHide: false, stdio: 'ignore' });
   await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
   child.unref();
 }

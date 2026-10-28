@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { ROOT } from "./config.mjs";
+import { DATA_ROOT } from "./config.mjs";
 
 export async function sendPointer(command) {
   let config;
@@ -8,7 +8,7 @@ export async function sendPointer(command) {
     config = JSON.parse(
       await readFile(
         process.env.QUIET_DESKTOP_PREVIEW_CONFIG ||
-          path.join(ROOT, ".runtime", "preview.json"),
+          path.join(DATA_ROOT, "preview.json"),
         "utf8",
       ),
     );

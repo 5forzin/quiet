@@ -1,6 +1,6 @@
 {
-  "name": "quiet-desktop-mvp",
-  "version": "0.1.0",
+  "name": "quiet-desktop",
+  "version": "1.0.0",
   "private": true,
   "description": "A local browser agent workspace on a separate Windows desktop, with session consent and live preview.",
   "type": "module",
@@ -24,7 +24,8 @@
     "test": "node --test test/unit.test.mjs test/updater.test.mjs",
     "test:mini": "node scripts/setup-mini.mjs && node --test test/mini.test.mjs",
     "test:pointer": "node --test test/pointer.test.mjs",
-    "test:integration": "node --test --test-concurrency=1 test/integration.test.mjs"
+    "test:integration": "node --test --test-concurrency=1 test/integration.test.mjs",
+    "build:release": "node scripts/build-release.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.3.0",

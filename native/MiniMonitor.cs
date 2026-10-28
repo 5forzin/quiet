@@ -45,6 +45,7 @@ internal sealed class MiniButton : Button {
     internal float UiScale = 1;
     internal bool Filled, Pill;
     internal Color StatusColor = MiniStyle.Muted;
+    internal Image Mark;
     private bool hovered, pressed;
     internal MiniButton() {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
@@ -66,7 +67,8 @@ internal sealed class MiniButton : Button {
         }
         var color = Enabled ? ForeColor : Color.FromArgb(112, 117, 113);
         float iconSize = 18 * UiScale, left = Text.Length == 0 ? (Width - iconSize) / 2 : 13 * UiScale;
-        if (Glyph.Length > 0) MiniStyle.Icon(g, Glyph, new RectangleF(left, (Height - iconSize) / 2, iconSize, iconSize), color);
+        if (Mark != null) g.DrawImage(Mark, left - 2 * UiScale, (Height - iconSize) / 2 - 2 * UiScale, iconSize + 4 * UiScale, iconSize + 4 * UiScale);
+        else if (Glyph.Length > 0) MiniStyle.Icon(g, Glyph, new RectangleF(left, (Height - iconSize) / 2, iconSize, iconSize), color);
         if (Pill) using (var brush = new SolidBrush(StatusColor)) g.FillEllipse(brush, 28 * UiScale, Height / 2 + 5 * UiScale, 5 * UiScale, 5 * UiScale);
         if (Text.Length > 0) {
             int textLeft = (int)((Glyph.Length > 0 ? 43 : 14) * UiScale);
@@ -89,6 +91,7 @@ internal sealed class MiniMonitor : Form {
     private string status = "Connecting", failure = "";
     private float scale = 1;
     private Font medium, small;
+    private Image brand;
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     protected override bool ShowWithoutActivation { get { return true; } }
     protected override CreateParams CreateParams { get { var value = base.CreateParams; value.ExStyle |= 0x08000080; return value; } }
@@ -116,6 +119,8 @@ internal sealed class MiniMonitor : Form {
         AutoScaleMode = AutoScaleMode.None; BackColor = MiniStyle.Surface; ForeColor = MiniStyle.Text; DoubleBuffered = true;
         using (var graphics = CreateGraphics()) scale = graphics.DpiX / 96f;
         pill = MakeButton("Quiet Desktop", "desktop", "Expand Quiet Desktop"); pill.Pill = true; pill.TrailingGlyph = "expand";
+        string brandPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "assets", "quiet-icon.png");
+        if (File.Exists(brandPath)) { brand = Image.FromFile(brandPath); pill.Mark = brand; }
         pill.MouseDown += BeginDrag; pill.MouseMove += MoveDrag; pill.MouseUp += EndDrag;
         pill.Click += delegate { if (!dragging) SetExpanded(true); };
         collapse = MakeButton("", "collapse", "Collapse to mini"); collapse.Click += delegate { SetExpanded(false); };
@@ -159,7 +164,8 @@ internal sealed class MiniMonitor : Form {
         using (var shape = MiniStyle.Round(new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), S(expanded ? 22 : 24)))
         using (var pen = new Pen(MiniStyle.Border, 1)) g.DrawPath(pen, shape);
         if (!expanded) return;
-        DrawText(g, "Quiet", medium, R(20, 10, 170, 28), MiniStyle.Text);
+        if (brand != null) g.DrawImage(brand, R(16, 10, 28, 28));
+        DrawText(g, "Quiet", medium, R(brand != null ? 52 : 20, 10, 150, 28), MiniStyle.Text);
         using (var shape = MiniStyle.Round(R(18, 62, 42, 42), S(12)))
         using (var brush = new SolidBrush(Color.FromArgb(61, 65, 62))) g.FillPath(brush, shape);
         MiniStyle.Icon(g, "desktop", R(28, 72, 22, 22), MiniStyle.Text);
@@ -225,7 +231,7 @@ internal sealed class MiniMonitor : Form {
     private async Task OpenDesktop() { if (await ActionRequest("/open", "{}")) SetExpanded(false); }
     private async Task TogglePause() { await ActionRequest("/widget/agent", "{\"action\":\"" + (paused ? "resume" : "pause") + "\"}"); await Poll(); }
     protected override void Dispose(bool disposing) {
-        if (disposing) { refresh.Dispose(); tips.Dispose(); client.Dispose(); medium.Dispose(); small.Dispose(); }
+        if (disposing) { refresh.Dispose(); tips.Dispose(); client.Dispose(); medium.Dispose(); small.Dispose(); if (brand != null) brand.Dispose(); }
         base.Dispose(disposing);
     }
     private void Capture(string directory, string name) {
@@ -237,7 +243,7 @@ internal sealed class MiniMonitor : Form {
     }
     internal static void Run(string[] arguments) {
         bool check = arguments.Length == 3 && arguments[0] == "--check";
-        string config = check ? arguments[1] : Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".runtime", "preview.json"));
+        string config = check ? arguments[1] : arguments.Length == 1 ? Path.GetFullPath(arguments[0]) : Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".runtime", "preview.json"));
         bool first; using (var singleton = new Mutex(true, "Local\\QuietDesktopMini_" + config.GetHashCode().ToString("x"), out first)) {
             if (!first) return;
             IntPtr before = GetForegroundWindow();
