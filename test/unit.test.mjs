@@ -6,6 +6,7 @@ import WebSocket from 'ws';
 import { normalizeSession, webUrl } from '../src/session.mjs';
 import { commandSchema } from '../src/protocol.mjs';
 import { startServer } from '../src/server.mjs';
+import { startPreview } from '../src/preview-server.mjs';
 
 test('session transfer preserves HttpOnly, Secure, host scope, expiry and SameSite', () => {
   const result = normalizeSession([{ domain: '.instagram.com', name: 'fixture', value: 'test-only', path: '/', httpOnly: true, secure: true, session: false, expirationDate: 2000000000, sameSite: 'no_restriction' }], ['instagram.com']);
@@ -71,4 +72,23 @@ test('session values travel only to the importer and never appear in status or r
   assert.equal(response.includes(secret), false);
   const status = await fetch(`http://127.0.0.1:${service.port}/command`, { method: 'POST', headers: { Authorization: `Bearer ${config.token}` }, body: '{"action":"status"}' });
   assert.equal((await status.text()).includes(secret), false);
+});
+
+test('preview shutdown requires local authentication and closes resources once', async t => {
+  let closed = 0;
+  const service = await startPreview({ port: 0,
+    capture: { close: () => closed++ }, agent: { close: () => closed++ }, workspace: { close: () => closed++ }
+  });
+  t.after(() => service.close());
+  const url = `http://127.0.0.1:${service.port}/shutdown`;
+  const headers = { Authorization: `Bearer ${service.token}` };
+  assert.equal((await fetch(url, { method: 'POST' })).status, 403);
+  assert.equal((await fetch(url, { method: 'POST', headers: { ...headers, Origin: 'https://example.com' } })).status, 403);
+  assert.equal((await fetch(url, { headers })).status, 405);
+  const response = await fetch(url, { method: 'POST', headers });
+  assert.equal(response.status, 200);
+  await response.text();
+  await service.close();
+  await service.close();
+  assert.equal(closed, 3);
 });

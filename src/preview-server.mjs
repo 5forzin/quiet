@@ -26,6 +26,7 @@ for (const icon of ['command', 'desktop', 'list-bullets', 'key', 'sidebar-simple
 export async function startPreview({ token = randomBytes(32).toString('hex'), port = 9468, command = sendCommand, capture = new DesktopCapture(), agent = new PreviewAgent(), workspace, openWindow, openMini = openMiniMonitor, monitorPid: initialMonitorPid, onOpen } = {}) {
   let state = { connected: false, running: false, tabs: [], recentActions: [] };
   let closing = false;
+  let closingTask;
   let activeTab;
   let pinned = false;
   let monitorPid = initialMonitorPid;
@@ -40,7 +41,7 @@ export async function startPreview({ token = randomBytes(32).toString('hex'), po
     const origin = `http://127.0.0.1:${server.address()?.port}`;
     const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' ws://127.0.0.1:${server.address()?.port}; base-uri 'none'; frame-ancestors 'none'; form-action 'none'` };
     if (request.headers.host !== `127.0.0.1:${server.address()?.port}` || (request.headers.origin && request.headers.origin !== origin)) { response.writeHead(403, headers); response.end(); return; }
-    if (['/health', '/open', '/mini', '/widget/state', '/widget/agent', '/pointer'].includes(request.url)) {
+    if (['/health', '/open', '/mini', '/shutdown', '/widget/state', '/widget/agent', '/pointer'].includes(request.url)) {
       if (!same(request.headers.authorization, `Bearer ${token}`)) { response.writeHead(403, headers); response.end(); return; }
       if (request.url === '/pointer' && request.method === 'POST') {
         try {
@@ -68,6 +69,9 @@ export async function startPreview({ token = randomBytes(32).toString('hex'), po
           if (!['pause', 'resume'].includes(action)) throw new Error('Invalid command');
           await command({ action }); response.writeHead(200, headers); response.end('{"ok":true}');
         } catch { response.writeHead(400, headers); response.end('{"ok":false}'); }
+      } else if (request.url === '/shutdown' && request.method === 'POST') {
+        response.writeHead(200, headers); response.end('{"ok":true}');
+        setImmediate(() => close().catch(() => {}));
       } else if (request.url === '/health' && request.method === 'GET') { response.writeHead(200, headers); response.end('{"ok":true}'); }
       else { response.writeHead(405, headers); response.end(); }
       return;
@@ -153,16 +157,16 @@ export async function startPreview({ token = randomBytes(32).toString('hex'), po
       else await new Promise(resolve => setImmediate(resolve));
     }
   })();
-  return {
-    port: server.address().port, token,
-    async close() {
+  function close() {
+    return closingTask ||= (async () => {
       closing = true;
       for (const socket of sockets.clients) socket.terminate();
       sockets.close(); capture.close(); agent.close(); workspace?.close();
       await Promise.allSettled([stateLoop, frameLoop]);
       server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
-    }
-  };
+    })();
+  }
+  return { port: server.address().port, token, close };
 }
 
 async function openMonitor(port, token) {
