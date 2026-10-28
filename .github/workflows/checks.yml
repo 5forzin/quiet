@@ -39,3 +39,4 @@ jobs:
       - run: npm run setup:workspace
       - run: npm run setup:preview
       - run: npm run setup:mini
+      - run: npm run test:preview

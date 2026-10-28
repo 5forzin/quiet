@@ -19,6 +19,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run test:preview
       - name: Verify stable tag
         shell: pwsh
         run: |

@@ -37,6 +37,8 @@ Pause blocks mutations and is checked between pointer movement steps. A click re
 
 Native capture uses reusable GDI DIB surfaces and `PrintWindow`. Application windows are captured each frame; static Explorer wallpaper is refreshed once per second. JPEG frames travel over binary local IPC and an authenticated WebSocket. The viewer presents the newest decoded bitmap and drops superseded frames.
 
+Edge's transparent popup margins are flattened to black by `PrintWindow`. The compositor clips interactive Chromium popups to their `WM_NCHITTEST` outline, cached until the window changes size. This preserves black content inside the popup without sending mouse input. If the outline cannot be determined within a bounded time, capture falls back to the full window.
+
 The desktop is captured at up to 1920 pixels wide. The viewer handles scaling. The 30/60 fps settings are targets; the displayed counter measures presented frames. Capture stops when no visible viewer requests a stream.
 
 ## Boundaries
