@@ -79,6 +79,7 @@ test(
     const result = JSON.parse(stdout.trim());
     assert.equal(result.foregroundUnchanged, true);
     assert.equal(result.connected, true);
+    assert.equal(result.pinReflected, true);
     assert.equal(result.expandReflected, true);
     assert.equal(result.collapseReflected, true);
     assert.equal(result.pauseReflected, true);

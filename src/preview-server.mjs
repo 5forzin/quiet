@@ -18,6 +18,7 @@ const same = (a, b) => { const x = Buffer.from(String(a || '')), y = Buffer.from
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const execute = promisify(execFile);
 const assets = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/app.css', ['app.css', 'text/css']]]);
+assets.set('/quiet-icon.png', ['../extension/icons/icon-48.png', 'image/png']);
 assets.set('/inter.woff2', ['../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2', 'font/woff2']);
 for (const icon of ['command', 'desktop', 'list-bullets', 'key', 'sidebar-simple', 'pause', 'play', 'corners-out', 'push-pin', 'lock-simple', 'browser', 'check', 'warning-circle', 'dots-three', 'x']) {
   assets.set(`/icons/${icon}.svg`, [`../node_modules/@phosphor-icons/core/assets/regular/${icon}.svg`, 'image/svg+xml']);

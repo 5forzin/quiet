@@ -37,7 +37,18 @@ foreach ($quietSpec in @(@(192, 386, 'wizard.bmp'), @(64, 64, 'wizard-small.bmp'
   $quietGraphics = [Drawing.Graphics]::FromImage($quietBitmap)
   $quietGraphics.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
   $quietGraphics.Clear($quietSurface)
-  if ($quietSpec[0] -gt 64) { $quietGraphics.DrawImage($quietLogo, 20, 114, 152, 152) }
+  if ($quietSpec[0] -gt 64) {
+    $quietGraphics.DrawImage($quietLogo, 32, 46, 128, 128)
+    $quietTitle = New-Object Drawing.Font('Segoe UI Semibold', 25, [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
+    $quietCaption = New-Object Drawing.Font('Segoe UI', 10, [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
+    $quietInk = New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(242,243,242))
+    $quietMuted = New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(169,174,171))
+    $quietAccent = New-Object Drawing.Pen([Drawing.Color]::FromArgb(133,201,164), 2)
+    $quietGraphics.DrawString('Quiet', $quietTitle, $quietInk, 32, 180)
+    $quietGraphics.DrawLine($quietAccent, 32, 316, 64, 316)
+    $quietGraphics.DrawString('WINDOWS', $quietCaption, $quietMuted, 32, 332)
+    $quietTitle.Dispose(); $quietCaption.Dispose(); $quietInk.Dispose(); $quietMuted.Dispose(); $quietAccent.Dispose()
+  }
   else { $quietGraphics.DrawImage($quietLogo, 6, 6, 52, 52) }
   $quietBitmap.Save((Join-Path $Destination $quietSpec[2]), [Drawing.Imaging.ImageFormat]::Bmp)
   $quietGraphics.Dispose(); $quietBitmap.Dispose()

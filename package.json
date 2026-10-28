@@ -1,6 +1,6 @@
 {
   "name": "quiet-desktop",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "A local browser agent workspace on a separate Windows desktop, with session consent and live preview.",
   "type": "module",

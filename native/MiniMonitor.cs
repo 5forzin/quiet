@@ -32,6 +32,7 @@ internal static class MiniStyle {
                 graphics.DrawLine(pen, 7, 5, 7, 15); graphics.DrawLine(pen, 13, 5, 13, 15);
             } else if (name == "play") graphics.DrawPolygon(pen, new PointF[] { new PointF(6, 4), new PointF(15, 10), new PointF(6, 16) });
             else if (name == "close") { graphics.DrawLine(pen, 6, 6, 14, 14); graphics.DrawLine(pen, 14, 6, 6, 14); }
+            else if (name == "pin") { graphics.DrawLine(pen, 7, 3, 13, 3); graphics.DrawLine(pen, 8, 3, 8, 9); graphics.DrawLine(pen, 12, 3, 12, 9); graphics.DrawLine(pen, 8, 9, 5, 12); graphics.DrawLine(pen, 12, 9, 15, 12); graphics.DrawLine(pen, 5, 12, 15, 12); graphics.DrawLine(pen, 10, 12, 10, 18); }
             else if (name == "collapse") graphics.DrawLine(pen, 5, 10, 15, 10);
             else if (name == "expand") { graphics.DrawLine(pen, 5, 12, 10, 7); graphics.DrawLine(pen, 10, 7, 15, 12); }
             else if (name == "open") { graphics.DrawLine(pen, 6, 14, 14, 6); graphics.DrawLine(pen, 6, 6, 14, 6); graphics.DrawLine(pen, 14, 6, 14, 14); }
@@ -84,10 +85,10 @@ internal sealed class MiniMonitor : Form {
     private readonly HttpClient client;
     private readonly System.Windows.Forms.Timer refresh = new System.Windows.Forms.Timer { Interval = 2000 };
     private readonly ToolTip tips = new ToolTip { ShowAlways = true };
-    private readonly MiniButton pill, open, pause, dismiss, collapse;
+    private readonly MiniButton pill, open, pause, dismiss, collapse, pin;
     private bool expanded, polling, paused, available, connected, dragging, pending, initialized;
     private Point pressedAt, startedAt;
-    private readonly string positionFile;
+    private readonly string positionFile, preferencesFile;
     private string status = "Connecting", failure = "";
     private float scale = 1;
     private Font medium, small;
@@ -114,7 +115,10 @@ internal sealed class MiniMonitor : Form {
         client = new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { BaseAddress = new Uri("http://127.0.0.1:" + port), Timeout = TimeSpan.FromSeconds(4) };
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         positionFile = Path.Combine(Path.GetDirectoryName(configFile), "mini-position.json");
+        preferencesFile = Path.Combine(Path.GetDirectoryName(configFile), "mini-preferences.json");
         Text = "Quiet Desktop Mini"; AccessibleName = Text;
+        string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "assets", "quiet.ico");
+        if (File.Exists(iconPath)) Icon = new Icon(iconPath);
         FormBorderStyle = FormBorderStyle.None; StartPosition = FormStartPosition.Manual; ShowInTaskbar = false; TopMost = true;
         AutoScaleMode = AutoScaleMode.None; BackColor = MiniStyle.Surface; ForeColor = MiniStyle.Text; DoubleBuffered = true;
         using (var graphics = CreateGraphics()) scale = graphics.DpiX / 96f;
@@ -123,6 +127,11 @@ internal sealed class MiniMonitor : Form {
         if (File.Exists(brandPath)) { brand = Image.FromFile(brandPath); pill.Mark = brand; }
         pill.MouseDown += BeginDrag; pill.MouseMove += MoveDrag; pill.MouseUp += EndDrag;
         pill.Click += delegate { if (!dragging) SetExpanded(true); };
+        pin = MakeButton("", "pin", "Always on top");
+        pin.Click += delegate { SetPinned(!TopMost); };
+        bool pinned = true;
+        try { var preferences = json.Deserialize<Dictionary<string, bool>>(File.ReadAllText(preferencesFile)); pinned = preferences["alwaysOnTop"]; } catch { }
+        SetPinned(pinned);
         collapse = MakeButton("", "collapse", "Collapse to mini"); collapse.Click += delegate { SetExpanded(false); };
         dismiss = MakeButton("", "close", "Close mini control"); dismiss.Click += delegate { Close(); };
         tips.SetToolTip(dismiss, "Close mini control. The agent keeps running.");
@@ -140,16 +149,22 @@ internal sealed class MiniMonitor : Form {
         var button = new MiniButton { Text = text, Glyph = glyph, AccessibleName = name };
         tips.SetToolTip(button, name); Controls.Add(button); return button;
     }
+    private void SetPinned(bool value) {
+        TopMost = value; pin.Filled = value; pin.ForeColor = value ? MiniStyle.Live : MiniStyle.Muted;
+        pin.AccessibleName = value ? "Unpin mini control" : "Always on top";
+        tips.SetToolTip(pin, pin.AccessibleName); pin.Invalidate();
+        try { File.WriteAllText(preferencesFile, json.Serialize(new { alwaysOnTop = value })); } catch { }
+    }
     private void SetFonts() {
         var previous = new Font[] { medium, small };
         medium = new Font("Segoe UI Semibold", 13 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         small = new Font("Segoe UI", 11 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
-        foreach (var button in new MiniButton[] { pill, open, pause, dismiss, collapse }) { button.Font = medium; button.UiScale = scale; }
+        foreach (var button in new MiniButton[] { pill, open, pause, dismiss, collapse, pin }) { button.Font = medium; button.UiScale = scale; }
         foreach (var font in previous) if (font != null) font.Dispose();
     }
     private void LayoutControls() {
-        Size = expanded ? new Size(S(320), S(192)) : new Size(S(214), S(48));
-        pill.Bounds = R(0, 0, 214, 48); collapse.Bounds = R(240, 10, 32, 28); dismiss.Bounds = R(276, 10, 32, 28);
+        Size = expanded ? new Size(S(320), S(192)) : new Size(S(250), S(48));
+        pill.Bounds = R(0, 0, 214, 48); pin.Bounds = expanded ? R(204, 10, 28, 28) : R(216, 10, 28, 28); collapse.Bounds = R(240, 10, 32, 28); dismiss.Bounds = R(276, 10, 32, 28);
         open.Bounds = R(18, 136, 232, 38); pause.Bounds = R(260, 136, 42, 38);
         pill.Visible = !expanded;
         foreach (var control in new Control[] { open, pause, dismiss, collapse }) control.Visible = expanded;
@@ -190,7 +205,7 @@ internal sealed class MiniMonitor : Form {
         if (args.Button != MouseButtons.Left) return;
         if (dragging) {
             Clamp();
-            var position = expanded ? new Point(Left + (Width - S(214)) / 2, Bottom - S(48)) : Location;
+            var position = expanded ? new Point(Left + (Width - S(250)) / 2, Bottom - S(48)) : Location;
             try { File.WriteAllText(positionFile, json.Serialize(new { x = position.X, y = position.Y })); } catch { }
         }
         BeginInvoke((Action)delegate { dragging = false; });
@@ -253,6 +268,9 @@ internal sealed class MiniMonitor : Form {
                     if (!check) { await form.Poll(); return; }
                     await form.Poll(); Directory.CreateDirectory(arguments[2]);
                     form.Capture(arguments[2], "mini-collapsed.png");
+                    form.pin.PerformClick(); bool unpinned = !form.TopMost;
+                    form.pin.PerformClick(); bool pinReflected = unpinned && form.TopMost && form.pin.Filled;
+                    using (var restored = new MiniMonitor(config)) pinReflected = pinReflected && restored.TopMost;
                     form.pill.PerformClick(); bool expandReflected = form.expanded;
                     form.Capture(arguments[2], "mini-expanded.png");
                     form.pause.PerformClick(); await WaitForCheck(() => form.paused);
@@ -261,7 +279,7 @@ internal sealed class MiniMonitor : Form {
                     form.open.PerformClick(); await WaitForCheck(() => !form.expanded); bool openCollapsed = !form.expanded;
                     form.pill.PerformClick(); form.collapse.PerformClick(); bool collapseReflected = !form.expanded;
                     form.pill.PerformClick();
-                    Console.WriteLine(form.json.Serialize(new { expanded = form.expanded, width = form.Width, height = form.Height, foregroundUnchanged = before == GetForegroundWindow(), connected = form.connected, expandReflected, collapseReflected, pauseReflected, openCollapsed })); form.Close();
+                    Console.WriteLine(form.json.Serialize(new { expanded = form.expanded, width = form.Width, height = form.Height, foregroundUnchanged = before == GetForegroundWindow(), connected = form.connected, expandReflected, collapseReflected, pauseReflected, openCollapsed, pinReflected })); form.Close();
                 };
                 Application.Run(form);
             }

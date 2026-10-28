@@ -46,8 +46,8 @@ SetupLogging=yes
 VersionInfoVersion={#AppVersion}.0
 
 [Messages]
-WelcomeLabel1=Quiet
-WelcomeLabel2=A desktop for your agent.%nSpace for you.%n%nVersion {#AppVersion}
+WelcomeLabel1=Install Quiet
+WelcomeLabel2=Your agent's desktop.%n%nStable {#AppVersion}%nAutomatic updates included.
 FinishedHeadingLabel=Quiet is ready
 FinishedLabel=Open Quiet to use the mini control.%n%nTo share sessions, load the browser extension in Edge. Your sessions stay on this computer.
 ButtonNext=Continue
@@ -107,4 +107,9 @@ begin
   WizardForm.WelcomeLabel1.Font.Size := 30;
   WizardForm.WelcomeLabel1.Font.Style := [fsBold];
   WizardForm.WelcomeLabel2.Font.Size := 12;
+  WizardForm.Font.Name := 'Segoe UI';
+  WizardForm.NextButton.Width := ScaleX(112);
+  WizardForm.NextButton.Left := WizardForm.CancelButton.Left - ScaleX(124);
+  WizardForm.WelcomeLabel1.Font.Color := $00F2F3F2;
+  WizardForm.WelcomeLabel2.Font.Color := $00ABAEA9;
 end;
