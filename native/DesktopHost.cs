@@ -13,6 +13,7 @@ using System.Web.Script.Serialization;
 internal static class DesktopHost {
     private static IntPtr desktop;
     private static IntPtr job;
+    private static IntPtr launchedProcess;
     private static string desktopName;
     private static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
     private delegate bool WindowCallback(IntPtr hwnd, IntPtr state);
@@ -64,6 +65,7 @@ internal static class DesktopHost {
     [DllImport("kernel32.dll")] private static extern uint ResumeThread(IntPtr thread);
     [DllImport("kernel32.dll")] private static extern bool TerminateProcess(IntPtr process, uint exitCode);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr value);
+    [DllImport("kernel32.dll")] private static extern uint WaitForSingleObject(IntPtr value, uint milliseconds);
     [DllImport("kernel32.dll")] private static extern void SetLastError(uint error);
 
     private static void Check(bool result) { if (!result) throw new Win32Exception(Marshal.GetLastWin32Error()); }
@@ -115,8 +117,10 @@ internal static class DesktopHost {
         try {
             if (!AssignProcessToJobObject(job, process.Process)) { int error = Marshal.GetLastWin32Error(); TerminateProcess(process.Process, 1); throw new Win32Exception(error); }
             if (ResumeThread(process.Thread) == 0xFFFFFFFF) { TerminateProcess(process.Process, 1); throw new Win32Exception(Marshal.GetLastWin32Error()); }
+            if (launchedProcess != IntPtr.Zero) CloseHandle(launchedProcess);
+            launchedProcess = process.Process; process.Process = IntPtr.Zero;
             return new { pid = process.Pid, desktop = desktopName };
-        } finally { CloseHandle(process.Thread); CloseHandle(process.Process); }
+        } finally { CloseHandle(process.Thread); if (process.Process != IntPtr.Zero) CloseHandle(process.Process); }
     }
     private static object Windows() {
         EnsureDesktop(); var windows = new List<object>();
@@ -195,6 +199,7 @@ internal static class DesktopHost {
                 desktop = OpenDesktop(desktopName, 0, false, 0x01FF); Check(desktop != IntPtr.Zero); EnsureJob();
                 return new { desktop = desktopName, native = true };
             case "launch": return Launch(request);
+            case "wait-exit": return new { exited = launchedProcess == IntPtr.Zero || WaitForSingleObject(launchedProcess, 8000) == 0 };
             case "appearance": EnsureDesktop(); return ShellAppearance(desktop, true);
             case "shell-state":
                 if (request.ContainsKey("input") && Convert.ToBoolean(request["input"])) {
@@ -231,6 +236,7 @@ internal static class DesktopHost {
             return 0;
         } finally {
             if (job != IntPtr.Zero) CloseHandle(job);
+            if (launchedProcess != IntPtr.Zero) CloseHandle(launchedProcess);
             if (desktop != IntPtr.Zero) CloseDesktop(desktop);
         }
     }

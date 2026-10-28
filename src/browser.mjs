@@ -38,7 +38,7 @@ export class AgentBrowser {
     try {
       await this.native.call('launch', {
         executable: await this.edgePath(),
-        arguments: [`--user-data-dir=${this.directory}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', '--no-first-run', '--no-default-browser-check', '--disable-sync', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--window-size=1280,900', 'about:blank']
+        arguments: [`--user-data-dir=${this.directory}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', '--no-first-run', '--no-default-browser-check', '--hide-crash-restore-bubble', '--disable-sync', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--window-size=1280,900', 'about:blank']
       });
       const deadline = Date.now() + 25000;
       while (Date.now() < deadline) {
@@ -177,6 +177,8 @@ export class AgentBrowser {
   }
   async shutdown() {
     try { await this.cdp?.call('Browser.close'); } catch {}
+    // Browser.close acknowledges the request before Edge finishes saving its profile.
+    try { await this.native?.call('wait-exit'); } catch {}
     this.cdp?.close(); this.cdp = null;
     this.native?.close(); this.native = null;
     this.tabs.clear();
