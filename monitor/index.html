@@ -12,7 +12,7 @@
     <div class="app layers-hidden inspector-hidden" id="app">
       <aside class="layers-panel" aria-label="Agent workspace">
         <header class="workspace-header">
-          <strong>Agent tabs</strong
+          <strong>Workspace</strong
           ><button
             class="icon-button"
             id="layers-close"
@@ -25,12 +25,12 @@
         <section class="layers-section">
           <button class="workspace-row selected" id="agent-workspace">
             <img class="icon" src="/icons/desktop.svg" alt="" /><span
-              >Local agent</span
+              >Agent desktop</span
             >
           </button>
         </section>
         <section class="layers-section tabs-section">
-          <h2>Agent tabs <span id="tab-count">0</span></h2>
+          <h2>Tabs <span id="tab-count">0</span></h2>
           <div id="tab-list" class="tab-list">
             <p class="panel-empty">No tabs open</p>
           </div>
@@ -79,6 +79,7 @@
             role="toolbar"
             aria-label="Preview controls"
           >
+            <div class="stream-controls">
             <button
               id="stream-toggle"
               class="toolbar-button"
@@ -86,12 +87,12 @@
               title="Pause preview"
               disabled
             >
-              <img class="icon" src="/icons/pause.svg" alt="" /></button
-            ><span class="toolbar-divider"></span>
+              <img class="icon" src="/icons/pause.svg" alt="" /></button>
             <div class="stream-label">
               <span id="stream-dot" class="dot"></span
               ><span id="stream-state">Connecting</span
               ><span id="frame-metrics"></span>
+            </div>
             </div>
             <span class="toolbar-divider"></span>
             <button
@@ -171,9 +172,19 @@
           tabindex="0"
         ></div>
         <header class="inspector-header">
+          <div class="agent-status">
           <span id="agent-dot" class="dot"></span
-          ><span id="agent-state">Connecting</span
-          ><button
+          ><span id="agent-state">Connecting</span>
+          </div>
+          <button id="inspector-close" class="icon-button" aria-label="Hide settings" title="Hide settings">
+            <img class="icon" src="/icons/x.svg" alt="" />
+          </button>
+        </header>
+        <div class="inspector-actions">
+          <button id="agent-toggle" class="primary-button" disabled>
+            <img class="icon" src="/icons/pause.svg" alt="" /><span>Pause agent</span>
+          </button>
+          <button
             id="pin"
             class="icon-button"
             title="Keep on top"
@@ -181,20 +192,9 @@
             aria-pressed="false"
             disabled
           >
-            <img class="icon" src="/icons/push-pin.svg" alt="" /></button
-          ><button id="agent-toggle" class="primary-button" disabled>
-            <img class="icon" src="/icons/pause.svg" alt="" /><span
-              >Pause agent</span
-            >
+            <img class="icon" src="/icons/push-pin.svg" alt="" />
           </button>
-        </header>
-        <button
-          id="inspector-close"
-          class="close-panel"
-          aria-label="Hide settings"
-        >
-          Close settings
-        </button>
+        </div>
         <div class="inspector-tabs" role="tablist" aria-label="Inspector">
           <button
             role="tab"

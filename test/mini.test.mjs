@@ -79,6 +79,10 @@ test(
     const result = JSON.parse(stdout.trim());
     assert.equal(result.foregroundUnchanged, true);
     assert.equal(result.connected, true);
+    assert.equal(result.expandReflected, true);
+    assert.equal(result.collapseReflected, true);
+    assert.equal(result.pauseReflected, true);
+    assert.equal(result.openCollapsed, true);
     assert.equal(opened, 1);
     assert.equal(paused, true);
     assert.deepEqual(

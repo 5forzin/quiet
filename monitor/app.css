@@ -7,16 +7,18 @@
 }
 :root {
   font:
-    12px/1.45 Inter,
+    13px/1.45 Inter,
     "Segoe UI",
     sans-serif;
-  color: #ededed;
-  background: #151515;
-  --panel: #242424;
-  --raised: #323232;
-  --line: #414141;
-  --muted: #aeaeae;
-  --green: #70c7a3;
+  color: #f2f3f2;
+  background: #191b1a;
+  --panel: #303231;
+  --raised: #414442;
+  --well: #252726;
+  --line: #ffffff17;
+  --muted: #a9aeab;
+  --green: #85c9a4;
+  --rim: #535754;
   color-scheme: dark;
 }
 * {
@@ -35,6 +37,7 @@ button {
   cursor: pointer;
   border: 0;
   background: none;
+  transition: background-color 120ms ease;
 }
 button:disabled {
   opacity: 0.4;
@@ -125,15 +128,14 @@ select:focus-visible,
 }
 .workspace-header {
   display: grid;
-  grid-template-columns: 1fr 28px;
+  grid-template-columns: 1fr 32px;
   align-items: center;
-  gap: 4px;
-  padding: 20px 18px;
-  border-bottom: 1px solid var(--line);
+  gap: 2px 8px;
+  padding: 18px 16px 14px;
 }
 .workspace-header strong {
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 600;
 }
 .workspace-header > span {
   grid-column: 1/-1;
@@ -141,21 +143,21 @@ select:focus-visible,
   font-size: 11px;
 }
 .icon-button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 9px;
 }
-.icon-button:hover,
+.icon-button:hover:not(:disabled),
 .icon-button[aria-pressed="true"] {
   background: var(--raised);
 }
 .layers-section {
-  padding: 16px 10px 0;
+  padding: 12px 10px 0;
 }
 .layers-section h2 {
-  margin: 0 8px 12px;
+  margin: 6px 10px 10px;
   font-size: 11px;
   font-weight: 500;
   color: var(--muted);
@@ -164,12 +166,15 @@ select:focus-visible,
 }
 .workspace-row,
 .tab-row {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 11px;
   align-items: center;
   width: 100%;
-  padding: 10px;
-  border-radius: 7px;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   text-align: left;
 }
 .workspace-row span,
@@ -182,6 +187,9 @@ select:focus-visible,
 .tab-row:hover,
 .tab-row.selected {
   background: var(--raised);
+}
+.tab-row.selected {
+  border-color: var(--line);
 }
 .workspace-row {
   color: #e7ebee;
@@ -196,10 +204,13 @@ select:focus-visible,
   flex: 1;
 }
 .workspace-footer {
-  padding: 18px;
+  margin: 12px 10px;
+  padding: 12px;
   font-size: 11px;
   color: var(--muted);
-  border-top: 1px solid var(--line);
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: 12px;
   display: grid;
   gap: 6px;
 }
@@ -234,7 +245,7 @@ select:focus-visible,
   position: relative;
   width: 100%;
   height: 100%;
-  background: #151515;
+  background: #191b1a;
 }
 .stage {
   width: 100%;
@@ -284,26 +295,37 @@ select:focus-visible,
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 44px;
-  padding: 5px 7px;
-  background: #292929f5;
-  border: 1px solid #505050;
-  border-radius: 22px;
-  box-shadow: 0 3px 14px #0005;
+  gap: 5px;
+  height: 52px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: 18px;
+  box-shadow: 0 6px 20px #0005, inset 0 1px #ffffff08;
   z-index: 2;
   max-width: calc(100% - 24px);
 }
+.stream-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 2px 12px 2px 2px;
+  background: var(--well);
+  border: 1px solid #ffffff08;
+  border-radius: 12px;
+}
 .toolbar-button {
-  height: 32px;
-  min-width: 32px;
-  border-radius: 16px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 11px;
   display: grid;
   place-items: center;
   padding: 0 8px;
 }
-.toolbar-button:hover {
-  background: #3c3c3c;
+.toolbar-button:hover:not(:disabled),
+.toolbar-button[aria-expanded="true"] {
+  background: var(--raised);
 }
 .toolbar-button .icon {
   width: 18px;
@@ -316,7 +338,7 @@ select:focus-visible,
   height: 16px;
   width: 1px;
   flex: 0 0 1px;
-  background: #484848;
+  background: var(--line);
 }
 .stream-label {
   display: flex;
@@ -334,25 +356,26 @@ select:focus-visible,
 .options-menu {
   position: absolute;
   right: 0;
-  bottom: 54px;
-  width: 212px;
+  bottom: 62px;
+  width: 226px;
   padding: 6px;
-  background: #282828;
-  border: 1px solid #505050;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px #0006;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px #0005, inset 0 1px #ffffff08;
 }
 .options-menu > button {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px;
+  min-height: 40px;
+  padding: 10px 12px;
   text-align: left;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 .options-menu > button:hover {
-  background: #383838;
+  background: var(--raised);
 }
 .stream-overlay {
   position: absolute;
@@ -360,16 +383,32 @@ select:focus-visible,
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 14px;
-  border-radius: 7px;
-  background: #282828ef;
+  border-radius: 10px;
+  background: var(--panel);
   border: 1px solid var(--line);
 }
 .inspector-header {
   display: flex;
   gap: 8px;
-  padding: 18px 14px 10px;
+  padding: 14px 14px 10px 18px;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inspector-actions {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 8px;
+  padding: 0 14px 16px;
+}
+.inspector-actions .icon-button {
+  width: 36px;
+  height: 36px;
+  background: var(--well);
 }
 #agent-state {
   flex: 1;
@@ -381,52 +420,56 @@ select:focus-visible,
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #5c5c5c;
-  border-radius: 6px;
-  padding: 7px 9px;
+  background: var(--raised);
+  border: 1px solid var(--rim);
+  border-radius: 9px;
+  padding: 8px 12px;
 }
 .primary-button .icon {
   width: 14px;
   height: 14px;
 }
-.primary-button:hover {
-  background: var(--raised);
+.primary-button:hover:not(:disabled) {
+  background: #4d514e;
 }
-.close-panel {
-  padding: 5px 16px 15px;
-  align-self: flex-end;
-  color: var(--muted);
-  font-size: 11px;
-}
-.close-panel:hover,
 .text-button:hover {
   color: white;
 }
 .inspector-tabs {
-  display: flex;
-  gap: 16px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  margin: 0 14px 4px;
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 .inspector-tabs > button {
-  padding: 10px 0;
+  padding: 6px 10px;
+  font-size: 12px;
   color: var(--muted);
-  border-bottom: 2px solid transparent;
+  border-radius: 7px;
 }
 .inspector-tabs > button[aria-selected="true"] {
   color: #e7ebee;
-  border-color: #c5c5c5;
+  background: var(--raised);
+  box-shadow: 0 1px 3px #0003;
 }
 [role="tabpanel"] {
   overflow-y: auto;
 }
 .property-section {
-  padding: 20px 18px;
-  border-bottom: 1px solid var(--line);
+  margin: 12px 14px;
+  padding: 15px;
+  background: #383b39;
+  border: 1px solid var(--line);
+  border-radius: 14px;
 }
 .property-section h2 {
   font-size: 11px;
-  font-weight: 550;
+  color: var(--muted);
+  font-weight: 500;
   margin: 0 0 15px;
 }
 dl {
@@ -454,10 +497,10 @@ dd {
   margin-bottom: 13px;
 }
 select {
-  background: var(--raised);
-  border: 1px solid #505050;
-  border-radius: 6px;
-  padding: 6px;
+  background: #494d4a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
   font-size: 11px;
   max-width: 100%;
 }
@@ -488,6 +531,7 @@ select {
   height: 100%;
   overflow-y: auto;
   padding: 32px;
+  background: var(--well);
 }
 .activity-view > header {
   display: flex;
@@ -512,8 +556,14 @@ select {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 15px 0;
+  padding: 15px 12px;
   border-bottom: 1px solid var(--line);
+}
+.action-row:first-child {
+  border-radius: 12px 12px 0 0;
+}
+.action-row:hover {
+  background: var(--panel);
 }
 .action-label {
   flex: 1;
@@ -588,5 +638,27 @@ select {
   }
   .activity-view {
     padding: 20px;
+  }
+}
+@media (max-width: 420px) {
+  #frame-metrics {
+    display: none;
+  }
+  .stream-label {
+    max-width: 100px;
+    overflow: hidden;
+  }
+  #stream-state {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stream-controls {
+    padding-right: 8px;
+    gap: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
   }
 }
