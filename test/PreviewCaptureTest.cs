@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -40,6 +41,7 @@ internal static class PreviewCaptureTest {
     private static IntPtr popup;
     private static int hitTests;
     private static bool noninteractive;
+    private static bool clipped;
 
     private static GraphicsPath Shape(int width, int height) {
         var path = new GraphicsPath();
@@ -78,13 +80,16 @@ internal static class PreviewCaptureTest {
     }
     private static Bitmap Capture(string desktop, int width) {
         object frame = typeof(PreviewHost).GetMethod("Capture", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { desktop, width });
+        var images = (IDictionary)typeof(PreviewHost).GetField("Images", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        object cached = images[popup];
+        clipped = cached != null && cached.GetType().GetField("Clip").GetValue(cached) != null;
         byte[] bytes = (byte[])frame.GetType().GetField("Data").GetValue(frame);
         using (var stream = new MemoryStream(bytes)) using (var image = new Bitmap(stream)) return new Bitmap(image);
     }
     private static void Pixel(Bitmap image, int x, int y, Color expected, string label) {
         Color actual = image.GetPixel(x, y);
         if (Math.Abs(actual.R - expected.R) > 12 || Math.Abs(actual.G - expected.G) > 12 || Math.Abs(actual.B - expected.B) > 12)
-            throw new Exception(label + ": expected " + expected + ", got " + actual);
+            throw new Exception(label + ": expected " + expected + ", got " + actual + "; clipped=" + clipped + "; hitTests=" + hitTests);
     }
     private static void Main(string[] args) {
         SetProcessDPIAware();
@@ -120,7 +125,7 @@ internal static class PreviewCaptureTest {
                     }
                     if (hitTests != initialHits) throw new Exception("Popup shape was not cached.");
                     SetWindowPos(popup, IntPtr.Zero, 200, 150, 360, 230, 0x0014);
-                    UpdateWindow(popup);
+                    UpdateWindow(background); UpdateWindow(popup);
                     using (var frame = Capture(name, 640)) {
                         Pixel(frame, 205, 200, Wallpaper, "Moved transparent margin");
                         Pixel(frame, 530, 210, Panel, "Resized popup content");
@@ -128,7 +133,7 @@ internal static class PreviewCaptureTest {
                     if (hitTests == initialHits) throw new Exception("Resizing did not refresh the popup shape.");
                     noninteractive = true;
                     SetWindowPos(popup, IntPtr.Zero, 100, 90, 300, 200, 0x0014);
-                    UpdateWindow(popup);
+                    UpdateWindow(background); UpdateWindow(popup);
                     using (var frame = Capture(name, 640)) Pixel(frame, 140, 130, Panel, "Noninteractive popup fallback");
                     SendMessage(popup, 0x0010, IntPtr.Zero, IntPtr.Zero); popup = IntPtr.Zero;
                     using (var frame = Capture(name, 640)) Pixel(frame, 140, 130, Wallpaper, "Closed popup removed");

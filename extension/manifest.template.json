@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Quiet",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Authorize selected browser sessions for your local agent desktop.",
   "minimum_chrome_version": "120",
   "permissions": [

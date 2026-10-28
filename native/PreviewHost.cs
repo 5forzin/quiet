@@ -65,6 +65,7 @@ internal static class PreviewHost {
     [DllImport("gdi32.dll")] private static extern bool StretchBlt(IntPtr target, int x, int y, int width, int height, IntPtr source, int sx, int sy, int sw, int sh, uint operation);
     [DllImport("gdi32.dll")] private static extern int SetStretchBltMode(IntPtr dc, int mode);
     [DllImport("gdi32.dll")] private static extern bool SetBrushOrgEx(IntPtr dc, int x, int y, IntPtr previous);
+    [DllImport("gdi32.dll")] private static extern bool GdiFlush();
 
     private static bool? PopupContains(CapturedWindow window, int x, int y, Stopwatch timer) {
         if (timer.ElapsedMilliseconds > 200) return null;
@@ -99,6 +100,18 @@ internal static class PreviewHost {
                     }
                     if (inside.Value) {
                         int low = 0, high = seed;
+                        if (previousLeft >= 0 && previousLeft <= seed) {
+                            bool? atEdge = PopupContains(window, previousLeft, y, timer);
+                            if (!atEdge.HasValue) return null;
+                            if (!atEdge.Value) low = previousLeft + 1;
+                            else if (previousLeft == 0) high = 0;
+                            else {
+                                bool? beforeEdge = PopupContains(window, previousLeft - 1, y, timer);
+                                if (!beforeEdge.HasValue) return null;
+                                if (beforeEdge.Value) high = previousLeft - 1;
+                                else low = high = previousLeft;
+                            }
+                        }
                         while (low < high) {
                             int mid = (low + high) / 2;
                             bool? hit = PopupContains(window, mid, y, timer);
@@ -106,6 +119,18 @@ internal static class PreviewHost {
                             if (hit.Value) high = mid; else low = mid + 1;
                         }
                         left = low; low = seed; high = surface.Width;
+                        if (previousRight > seed) {
+                            bool? atEdge = PopupContains(window, previousRight - 1, y, timer);
+                            if (!atEdge.HasValue) return null;
+                            if (!atEdge.Value) high = previousRight - 1;
+                            else if (previousRight == surface.Width) low = surface.Width - 1;
+                            else {
+                                bool? afterEdge = PopupContains(window, previousRight, y, timer);
+                                if (!afterEdge.HasValue) return null;
+                                if (afterEdge.Value) low = previousRight;
+                                else { low = previousRight - 1; high = previousRight; }
+                            }
+                        }
                         while (low + 1 < high) {
                             int mid = (low + high) / 2;
                             bool? hit = PopupContains(window, mid, y, timer);
@@ -173,7 +198,7 @@ internal static class PreviewHost {
                             var timer = Stopwatch.StartNew();
                             bool success = PrintWindow(window.Handle, cached.Image.DC, 2);
                             if (success) {
-                                if (cached.Updated == 0) cached.Clip = PopupClip(window, cached.Image);
+                                if (cached.Updated == 0) { GdiFlush(); cached.Clip = PopupClip(window, cached.Image); }
                                 cached.Updated = now;
                             }
                             timings[window.ClassName] = timer.Elapsed.TotalMilliseconds;
@@ -183,13 +208,16 @@ internal static class PreviewHost {
                             int x = (int)Math.Round((window.Bounds.Left - left) * scale), y = (int)Math.Round((window.Bounds.Top - top) * scale);
                             int targetWidth = (int)Math.Round(ww * scale), targetHeight = (int)Math.Round(wh * scale);
                             if (cached.Clip == null) StretchBlt(output.DC, x, y, targetWidth, targetHeight, cached.Image.DC, 0, 0, ww, wh, 0x00CC0020);
-                            else using (var graphics = Graphics.FromImage(output.Image)) {
-                                graphics.TranslateTransform(x, y);
-                                graphics.ScaleTransform((float)targetWidth / ww, (float)targetHeight / wh);
-                                graphics.SetClip(cached.Clip, CombineMode.Replace);
-                                graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
-                                graphics.PixelOffsetMode = PixelOffsetMode.Half;
-                                graphics.DrawImage(cached.Image.Image, new Rectangle(0, 0, ww, wh), 0, 0, ww, wh, GraphicsUnit.Pixel);
+                            else {
+                                GdiFlush();
+                                using (var graphics = Graphics.FromImage(output.Image)) {
+                                    graphics.TranslateTransform(x, y);
+                                    graphics.ScaleTransform((float)targetWidth / ww, (float)targetHeight / wh);
+                                    graphics.SetClip(cached.Clip, CombineMode.Replace);
+                                    graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+                                    graphics.PixelOffsetMode = PixelOffsetMode.Half;
+                                    graphics.DrawImage(cached.Image.Image, new Rectangle(0, 0, ww, wh), 0, 0, ww, wh, GraphicsUnit.Pixel);
+                                }
                             }
                             rendered++;
                             timings["compose:" + window.ClassName] = compositionTimer.Elapsed.TotalMilliseconds;
@@ -198,6 +226,7 @@ internal static class PreviewHost {
                     var removed = new List<IntPtr>(); foreach (var handle in Images.Keys) if (!present.Contains(handle)) removed.Add(handle);
                     foreach (var handle in removed) { Images[handle].Dispose(); Images.Remove(handle); }
                 if (rendered == 0) throw new InvalidOperationException("The agent windows did not render a preview.");
+                GdiFlush();
                 return Encode(output.Image, rendered, windows);
         } finally { SetThreadDesktop(previous); CloseDesktop(desktop); }
     }
